@@ -1,9 +1,11 @@
 package com.marker.locus
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,6 +17,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -27,10 +30,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Blue
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.ClipboardManager
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -46,6 +53,8 @@ import com.marker.locus.ui.theme.Purple40
 
 @Composable
 fun MainScreen() {
+    val id = "kiw84ujwe24";
+    val clipboardManager: ClipboardManager = LocalClipboardManager.current
     val singapore = LatLng(1.35, 103.87)
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(singapore, 10f)
@@ -65,6 +74,7 @@ fun MainScreen() {
                 .fillMaxWidth()
                 .height(100.dp)
         ) {
+
             AsyncImage(
                 model = "https://i.redd.it/tatkh3vtw1tc1.jpeg",
                 contentDescription = "wtf",
@@ -79,10 +89,17 @@ fun MainScreen() {
                         ambientColor = Color.Black
                     )
                     .clip(CircleShape)
-
-
+                    .clickable {
+                        clipboardManager.setText(AnnotatedString(id))
+                    }
             )
-            Column(modifier = Modifier.fillMaxHeight().padding(vertical = 20.dp)) {
+            Spacer(modifier = Modifier.weight(1f))
+            Column(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .padding(vertical = 20.dp),
+                horizontalAlignment = Alignment.End
+            ) {
                 Text(
                     text = "Mark Kondratenko",
                     fontFamily = FontFamily.Default,
@@ -90,8 +107,8 @@ fun MainScreen() {
                     fontSize = 22.sp,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
-                        .padding(5.dp)
-                        .align(Alignment.CenterHorizontally),
+                        .padding(horizontal = 20.dp, vertical = 5.dp)
+                        .align(Alignment.End),
                     textAlign = TextAlign.Center,
                     style = TextStyle(
                         shadow = Shadow(
@@ -102,13 +119,13 @@ fun MainScreen() {
                     )
                 )
                 Text(
-                    text = "ID: r3i81hr1",
+                    text = "ID: $id",
                     fontFamily = FontFamily.Default,
                     fontWeight = FontWeight.Light,
                     textAlign = TextAlign.Center,
                     fontSize = 17.sp,
                     color = MaterialTheme.colorScheme.secondary,
-                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                    modifier = Modifier.align(Alignment.End).padding(horizontal = 20.dp),
                     style = TextStyle(
                         shadow = Shadow(
                             color = Color.Black,
@@ -119,5 +136,13 @@ fun MainScreen() {
                 )
             }
         }
+    }
+}
+
+@Preview
+@Composable
+private fun my() {
+    Surface {
+        MainScreen()
     }
 }
