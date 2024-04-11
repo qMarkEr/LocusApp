@@ -18,6 +18,7 @@
         android:roundIcon="@mipmap/borow_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Locus"
+
         tools:targetApi="34">
 
         <meta-data
