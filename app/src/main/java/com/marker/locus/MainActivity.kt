@@ -1,6 +1,5 @@
 package com.marker.locus
 
-import MainUI
 import android.graphics.Color
 import android.os.Bundle
 import android.widget.Toast

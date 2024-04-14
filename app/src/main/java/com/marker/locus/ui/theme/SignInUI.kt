@@ -81,7 +81,7 @@ fun SignInUI(state: SignInState,
         ) {
             Icon(painterResource(id = R.drawable.borow_launcher_foreground_icon), contentDescription = "AAA")
             Spacer(modifier = Modifier.width(8.dp))
-            Text(text = "Sign In", fontSize = 20.sp)
+            Text(text = "Become Locus", fontSize = 20.sp)
         }
     }
 }

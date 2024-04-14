@@ -1,3 +1,5 @@
+package com.marker.locus
+
 import androidx.compose.material.BottomSheetScaffoldDefaults
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.ExperimentalMaterial3Api

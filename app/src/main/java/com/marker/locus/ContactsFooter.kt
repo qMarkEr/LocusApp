@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.sp
 fun Footer(lst : SnapshotStateList<String>) {
     Column(modifier = Modifier.fillMaxWidth().height(500.dp)) {
         Text(
-            text = "Contacts",
+            text = "My Locuses",
             fontFamily = FontFamily.Default,
             fontWeight = FontWeight.Bold,
             modifier = Modifier
