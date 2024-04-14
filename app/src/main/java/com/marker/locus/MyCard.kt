@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -16,18 +17,28 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ElevatedButton
+import androidx.compose.material3.Icon
+
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Color.Companion.Blue
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.ClipboardManager
@@ -37,11 +48,9 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.google.android.gms.maps.UiSettings
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MapStyleOptions
@@ -49,11 +58,15 @@ import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.rememberCameraPositionState
-import com.marker.locus.ui.theme.Purple40
+import com.marker.locus.ui.theme.styleDark
+import com.marker.locus.ui.theme.styleLight
 
 @Composable
-fun MainScreen() {
+fun MainScreen( userData: UserData?, onSignOut: () -> Unit) {
     val id = "kiw84ujwe24";
+    var showMenu by remember {
+        mutableStateOf(false);
+    }
     val clipboardManager: ClipboardManager = LocalClipboardManager.current
     val singapore = LatLng(1.35, 103.87)
     val cameraPositionState = rememberCameraPositionState {
@@ -67,82 +80,128 @@ fun MainScreen() {
             properties = MapProperties(mapStyleOptions = MapStyleOptions(if (isSystemInDarkTheme()) styleDark else styleLight)),
             uiSettings = MapUiSettings(zoomControlsEnabled = false, compassEnabled = false)
         )
-        Row(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .windowInsetsPadding(WindowInsets.statusBars)
-                .fillMaxWidth()
-                .height(100.dp)
+        Column (modifier = Modifier
+            .align(Alignment.TopCenter)
+            .windowInsetsPadding(WindowInsets.statusBars)
         ) {
 
-            AsyncImage(
-                model = "https://i.redd.it/tatkh3vtw1tc1.jpeg",
-                contentDescription = "wtf",
-                contentScale = ContentScale.Crop,
+            Row(
                 modifier = Modifier
-                    .align(Alignment.CenterVertically)
-                    .size(90.dp)
-                    .padding(15.dp)
-                    .shadow(
-                        shape = CircleShape,
-                        elevation = 20.dp,
-                        ambientColor = Color.Black
-                    )
-                    .clip(CircleShape)
-                    .clickable {
-                        clipboardManager.setText(AnnotatedString(id))
-                    }
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            Column(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .padding(vertical = 20.dp),
-                horizontalAlignment = Alignment.End
+                    .fillMaxWidth()
+                    .height(100.dp)
             ) {
-                Text(
-                    text = "Mark Kondratenko",
-                    fontFamily = FontFamily.Default,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 22.sp,
-                    color = MaterialTheme.colorScheme.primary,
+                if (userData != null) {
+                    AsyncImage(
+                        model = userData.profilePictureUrl,
+                        contentDescription = "wtf",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .align(Alignment.CenterVertically)
+                            .size(90.dp)
+                            .padding(15.dp)
+                            .shadow(
+                                shape = CircleShape,
+                                elevation = 20.dp,
+                                ambientColor = Color.Black
+                            )
+                            .clip(CircleShape)
+                    )
+                }
+                Spacer(modifier = Modifier.weight(1f))
+                Column(
                     modifier = Modifier
-                        .padding(horizontal = 20.dp, vertical = 5.dp)
-                        .align(Alignment.End),
-                    textAlign = TextAlign.Center,
-                    style = TextStyle(
-                        shadow = Shadow(
-                            color = Color.Black,
-                            offset = Offset.Zero,
-                            blurRadius = 50f
+                        .fillMaxHeight()
+                        .padding(15.dp),
+                    horizontalAlignment = Alignment.End
+                ) {
+                    if (userData != null) {
+                        userData.username?.let {
+                            Text(
+                                text = it,
+                                fontFamily = FontFamily.Default,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 22.sp,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier
+                                    .padding(horizontal = 20.dp, vertical = 5.dp)
+                                    .align(Alignment.End),
+                                textAlign = TextAlign.Center,
+                                style = TextStyle(
+                                    shadow = Shadow(
+                                        color = Color.Black,
+                                        offset = Offset.Zero,
+                                        blurRadius = 50f
+                                    )
+                                )
+                            )
+                        }
+                    }
+                    Text(
+                        text = "ID: $id",
+                        fontFamily = FontFamily.Default,
+                        fontWeight = FontWeight.Light,
+                        textAlign = TextAlign.Center,
+                        fontSize = 17.sp,
+                        color = MaterialTheme.colorScheme.secondary,
+                        modifier = Modifier
+                            .align(Alignment.End)
+                            .padding(horizontal = 20.dp),
+                        style = TextStyle(
+                            shadow = Shadow(
+                                color = Color.Black,
+                                offset = Offset.Zero,
+                                blurRadius = 30f
+                            )
                         )
                     )
+                }
+            }
+            ElevatedButton(onClick = { showMenu = !showMenu },
+                modifier = Modifier
+                    .padding(horizontal = 15.dp)
+                    .size(40.dp),
+                elevation = ButtonDefaults.elevatedButtonElevation(10.dp),
+                contentPadding = PaddingValues(1.dp),
+            ) {
+                Icon(imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                    contentDescription = "aa",
+                    tint = MaterialTheme.colorScheme.primary
                 )
-                Text(
-                    text = "ID: $id",
-                    fontFamily = FontFamily.Default,
-                    fontWeight = FontWeight.Light,
-                    textAlign = TextAlign.Center,
-                    fontSize = 17.sp,
-                    color = MaterialTheme.colorScheme.secondary,
-                    modifier = Modifier.align(Alignment.End).padding(horizontal = 20.dp),
-                    style = TextStyle(
-                        shadow = Shadow(
-                            color = Color.Black,
-                            offset = Offset.Zero,
-                            blurRadius = 30f
-                        )
-                    )
+            }
+            ElevatedButton(
+                onClick = { clipboardManager.setText(AnnotatedString(id)) },
+                modifier = Modifier
+                    .padding(15.dp)
+                    .size(40.dp),
+                contentPadding = PaddingValues(1.dp),
+                elevation = ButtonDefaults.elevatedButtonElevation(10.dp)
+
+            ) {
+                Icon(imageVector = Icons.Default.Share,
+                    contentDescription = "aa",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+            if (showMenu) {
+                AlertDialog(onDismissRequest = { showMenu = !showMenu },
+                    confirmButton = {
+                        TextButton(onClick = { onSignOut() }) {
+                            Text(text = "Yeah")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showMenu = !showMenu }) {
+                            Text(text = "Nah")
+                        }
+                    },
+                    title = {
+                            Text(text = "Log out?")
+                    },
+                    text = {
+                        Text(text = "Are you sure?")
+                    }
                 )
             }
         }
-    }
-}
-
-@Preview
-@Composable
-private fun my() {
-    Surface {
-        MainScreen()
     }
 }

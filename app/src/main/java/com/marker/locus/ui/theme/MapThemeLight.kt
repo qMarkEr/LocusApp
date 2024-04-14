@@ -1,4 +1,4 @@
-package com.marker.locus
+package com.marker.locus.ui.theme
 
 val styleLight = """
     [
