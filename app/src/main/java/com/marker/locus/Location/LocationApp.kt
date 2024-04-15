@@ -1,4 +1,4 @@
-package com.marker.locus
+package com.marker.locus.Location
 
 import android.app.Application
 import android.app.NotificationChannel

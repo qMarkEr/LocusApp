@@ -1,4 +1,4 @@
-package com.marker.locus
+package com.marker.locus.SignIn
 
 import android.content.Context
 import android.content.Intent
@@ -9,6 +9,7 @@ import com.google.android.gms.auth.api.identity.SignInClient
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
+import com.marker.locus.R
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.tasks.await
 

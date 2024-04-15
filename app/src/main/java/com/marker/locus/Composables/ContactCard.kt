@@ -1,6 +1,5 @@
-package com.marker.locus
+package com.marker.locus.Composables
 
-import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,9 +13,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -32,6 +29,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.marker.locus.R
 
 @Composable
 fun ContactCard(name : String, id : String, lst : SnapshotStateList<String>) {
@@ -99,7 +97,8 @@ fun ContactCard(name : String, id : String, lst : SnapshotStateList<String>) {
                 if (mode)
                     R.drawable.cancel_locating
                 else
-                    R.drawable.locate),
+                    R.drawable.locate
+                ),
                 contentDescription = "main action"
             )
         }

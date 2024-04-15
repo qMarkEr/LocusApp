@@ -1,4 +1,4 @@
-package com.marker.locus
+package com.marker.locus.Location
 
 import android.app.NotificationManager
 import android.app.Service
@@ -7,6 +7,7 @@ import android.content.Intent
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.google.android.gms.location.LocationServices
+import com.marker.locus.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

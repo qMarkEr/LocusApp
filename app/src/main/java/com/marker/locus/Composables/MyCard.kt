@@ -1,10 +1,10 @@
-package com.marker.locus
+package com.marker.locus.Composables
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.location.Location
-import android.os.Looper
-import android.util.Log
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -24,22 +25,21 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.Icon
-
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,41 +51,43 @@ import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.ClipboardManager
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import coil.compose.AsyncImage
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationCallback
-import com.google.android.gms.location.LocationRequest
-import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MapStyleOptions
+import com.google.maps.android.compose.CameraPositionState
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
-import com.google.maps.android.compose.Marker
-import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
+import com.marker.locus.Location.DefaultLocationClient
+import com.marker.locus.R
+import com.marker.locus.SignIn.UserData
 import com.marker.locus.ui.theme.styleDark
 import com.marker.locus.ui.theme.styleLight
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-
 
 @SuppressLint("MissingPermission")
 @Composable
 fun MainScreen(userData: UserData?,
-                       onSignOut: () -> Unit,
-                       context: Context) {
+               onSignOut: () -> Unit,
+               context: Context) {
 
     val locationClient = DefaultLocationClient(
         context,
@@ -105,19 +107,19 @@ fun MainScreen(userData: UserData?,
     val isLastLocationKnown = remember {
         mutableStateOf(true)
     }
+    val scope = rememberCoroutineScope()
     val clipboardManager: ClipboardManager = LocalClipboardManager.current
     Box(modifier = Modifier.fillMaxSize()) {
-        LaunchedEffect (key1 = null) {
+        LaunchedEffect (key1 = true) {
             val temp = locationClient.getLastLocation().await()
             if (temp != null) {
                 myCurrentLocation = LatLng(temp.latitude, temp.longitude)
                 cameraPositionState.position = CameraPosition.fromLatLngZoom(myCurrentLocation, 15f)
-                Log.d("AAAAAAAAAAAAAAAAA", "${temp.latitude}")
             } else {
                 isLastLocationKnown.value = false
             }
         }
-        LaunchedEffect (key1 = null) {
+        LaunchedEffect (key1 = true) {
             locationClient.getLocationUpdates(500)
                 .catch { e -> e.printStackTrace() }
                 .onEach { location ->
@@ -134,11 +136,14 @@ fun MainScreen(userData: UserData?,
             uiSettings = MapUiSettings(zoomControlsEnabled = false, compassEnabled = false)
         ) {
             if (isLastLocationKnown.value) {
-                Marker(
-                    state = MarkerState(position = myCurrentLocation)
+                MyMarker(
+                    userData = userData!!,
+                    userLocation = myCurrentLocation,
+                    cameraPositionState = cameraPositionState
                 )
             }
         }
+
         Column (modifier = Modifier
             .align(Alignment.TopCenter)
             .windowInsetsPadding(WindowInsets.statusBars)
@@ -165,8 +170,14 @@ fun MainScreen(userData: UserData?,
                             )
                             .clip(CircleShape)
                             .clickable {
-                                cameraPositionState.position =
-                                    CameraPosition.fromLatLngZoom(myCurrentLocation, 15f)
+                                scope.launch {
+                                    cameraPositionState.animate(
+                                        update = CameraUpdateFactory.newCameraPosition(
+                                            CameraPosition(myCurrentLocation, 15f, 0f, 0f)
+                                        ),
+                                        durationMs = 700
+                                    )
+                                }
                             }
                     )
                 }
@@ -219,7 +230,8 @@ fun MainScreen(userData: UserData?,
                     )
                 }
             }
-            ElevatedButton(onClick = { showMenu = !showMenu },
+            ElevatedButton(
+                onClick = { showMenu = !showMenu },
                 modifier = Modifier
                     .padding(horizontal = 15.dp)
                     .size(40.dp),
@@ -267,4 +279,92 @@ fun MainScreen(userData: UserData?,
             }
         }
     }
+}
+
+@Composable
+fun MyMarker(userData: UserData,
+             userLocation : LatLng,
+             cameraPositionState : CameraPositionState) {
+    // TODO:
+    //  - implement this
+    var showInfo by remember {
+        mutableStateOf(false)
+    }
+    Box(
+        modifier = Modifier
+            .offset { userLocation.toPx(cameraPositionState) }
+            .background(color = Color.Red, CircleShape)
+            .size(20.dp)
+    ) {
+        Icon(painter = painterResource(id = R.drawable.borow_launcher_foreground),
+            contentDescription = "aaa")
+    }
+}
+
+@Composable
+fun LocusMarker(userData: UserData,
+                userLocation : LatLng,
+                cameraPositionState : CameraPositionState) {
+    // TODO:
+    //  - implement this
+    var showInfo by remember {
+        mutableStateOf(false)
+    }
+    Box(
+        modifier = Modifier
+            .offset { userLocation.toPx(cameraPositionState) }
+            .background(color = Color.Red, CircleShape)
+            .size(20.dp)
+            .clickable {
+                showInfo = true
+            }
+    ) {
+        Icon(
+            painter = painterResource(id = R.drawable.borow_launcher_foreground),
+            contentDescription = "aaa",
+            modifier = Modifier
+                .fillMaxSize()
+                .shadow(
+                    shape = CircleShape,
+                    elevation = 15.dp,
+                    ambientColor = Color.Black
+                )
+                .clip(CircleShape)
+        )
+    }
+}
+@Stable
+fun LatLng.toPx(cameraPositionState : CameraPositionState): IntOffset {
+    cameraPositionState.position
+    return cameraPositionState.projection
+        ?.toScreenLocation(this)
+        ?.let { point ->
+            IntOffset(point.x, point.y)
+        } ?: IntOffset.Zero
+}
+
+private fun getBitmapFromImage(context: Context, drawable: Int): Bitmap {
+
+    // on below line we are getting drawable
+    val db = ContextCompat.getDrawable(context, drawable)
+
+    // in below line we are creating our bitmap and initializing it.
+    val bit = Bitmap.createBitmap(
+        db!!.intrinsicWidth, db.intrinsicHeight, Bitmap.Config.ARGB_8888
+    )
+
+    // on below line we are
+    // creating a variable for canvas.
+    val canvas = Canvas(bit)
+
+    // on below line we are setting bounds for our bitmap.
+    db.setBounds(0, 0, canvas.width, canvas.height)
+
+    // on below line we are simply
+    // calling draw to draw our canvas.
+    db.draw(canvas)
+
+    // on below line we are
+    // returning our bitmap.
+    return bit
 }

@@ -1,4 +1,4 @@
-package com.marker.locus
+package com.marker.locus.SignIn
 
 import android.Manifest
 import android.content.Context
