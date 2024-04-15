@@ -1,7 +1,10 @@
 package com.marker.locus
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Bundle
+import android.os.Looper
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -13,10 +16,14 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.core.app.ActivityCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -26,18 +33,22 @@ import com.marker.locus.ui.theme.SignInUI
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val activeContacts = mutableStateListOf("")
-
     private val googleAuthUiClient by lazy {
         GoogleAuthUiClient(
             context = applicationContext,
             oneTapClient = Identity.getSignInClient(applicationContext)
         )
     }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge(
             SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT)
@@ -50,79 +61,86 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    val navController = rememberNavController()
-                    NavHost(navController = navController, startDestination = "sign_in") {
-                        composable("sign_in") {
-                            val viewModel = viewModel<SignInViewModel>()
-                            val state by viewModel.state.collectAsStateWithLifecycle()
+                    SignInController()
+                }
+            }
+        }
+    }
 
-                            LaunchedEffect(key1 = Unit) {
-                                if(googleAuthUiClient.getSignedInUser() != null) {
-                                    navController.navigate("profile")
-                                }
+
+    @Composable
+    private fun SignInController() {
+        val navController = rememberNavController()
+        NavHost(navController = navController, startDestination = "sign_in") {
+            composable("sign_in") {
+                val viewModel = viewModel<SignInViewModel>()
+                val state by viewModel.state.collectAsStateWithLifecycle()
+
+                LaunchedEffect(key1 = Unit) {
+                    if (googleAuthUiClient.getSignedInUser() != null) {
+                        navController.navigate("profile")
+                    }
+                }
+
+                val launcher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.StartIntentSenderForResult(),
+                    onResult = { result ->
+                        if (result.resultCode == RESULT_OK) {
+                            lifecycleScope.launch {
+                                val signInResult = googleAuthUiClient.signInWithIntent(
+                                    intent = result.data ?: return@launch
+                                )
+                                viewModel.onSignInResult(signInResult)
                             }
+                        }
+                    }
+                )
 
-                            val launcher = rememberLauncherForActivityResult(
-                                contract = ActivityResultContracts.StartIntentSenderForResult(),
-                                onResult = { result ->
-                                    if(result.resultCode == RESULT_OK) {
-                                        lifecycleScope.launch {
-                                            val signInResult = googleAuthUiClient.signInWithIntent(
-                                                intent = result.data ?: return@launch
-                                            )
-                                            viewModel.onSignInResult(signInResult)
-                                        }
-                                    }
-                                }
-                            )
+                LaunchedEffect(key1 = state.isSignInSuccessful) {
+                    if (state.isSignInSuccessful) {
+                        Toast.makeText(
+                            applicationContext,
+                            "Sign in successful",
+                            Toast.LENGTH_LONG
+                        ).show()
 
-                            LaunchedEffect(key1 = state.isSignInSuccessful) {
-                                if(state.isSignInSuccessful) {
-                                    Toast.makeText(
-                                        applicationContext,
-                                        "Sign in successful",
-                                        Toast.LENGTH_LONG
-                                    ).show()
-
-                                    navController.navigate("profile")
-                                    viewModel.resetState()
-                                }
-                            }
-                            if (googleAuthUiClient.getSignedInUser() == null) {
-                                SignInUI(
-                                    state = state,
-                                    onSignInClick = {
-                                        lifecycleScope.launch {
-                                            val signInIntentSender = googleAuthUiClient.signIn()
-                                            launcher.launch(
-                                                IntentSenderRequest.Builder(
-                                                    signInIntentSender ?: return@launch
-                                                ).build()
-                                            )
-                                        }
-                                    }
+                        navController.navigate("profile")
+                        viewModel.resetState()
+                    }
+                }
+                if (googleAuthUiClient.getSignedInUser() == null) {
+                    SignInUI(
+                        state = state,
+                        onSignInClick = {
+                            lifecycleScope.launch {
+                                val signInIntentSender = googleAuthUiClient.signIn()
+                                launcher.launch(
+                                    IntentSenderRequest.Builder(
+                                        signInIntentSender ?: return@launch
+                                    ).build()
                                 )
                             }
                         }
-                        composable("profile") {
-                            MainUI(
-                                activeContacts = activeContacts,
-                                userData = googleAuthUiClient.getSignedInUser(),
-                                onSignOut = {
-                                    lifecycleScope.launch {
-                                        googleAuthUiClient.signOut()
-                                        Toast.makeText(
-                                            applicationContext,
-                                            "Signed out",
-                                            Toast.LENGTH_LONG
-                                        ).show()
-                                        navController.popBackStack()
-                                    }
-                                }
-                            )
-                        }
-                    }
+                    )
                 }
+            }
+            composable("profile") {
+                MainUI(
+                    activeContacts = activeContacts,
+                    userData = googleAuthUiClient.getSignedInUser(),
+                    onSignOut = {
+                        lifecycleScope.launch {
+                            googleAuthUiClient.signOut()
+                            Toast.makeText(
+                                applicationContext,
+                                "Signed out",
+                                Toast.LENGTH_LONG
+                            ).show()
+                            navController.popBackStack()
+                        }
+                    },
+                    applicationContext
+                )
             }
         }
     }

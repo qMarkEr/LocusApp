@@ -1,5 +1,10 @@
 package com.marker.locus
 
+import android.annotation.SuppressLint
+import android.content.Context
+import android.location.Location
+import android.os.Looper
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -19,6 +24,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
@@ -29,6 +35,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,35 +59,86 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
+import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.marker.locus.ui.theme.styleDark
 import com.marker.locus.ui.theme.styleLight
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.tasks.await
 
+
+@SuppressLint("MissingPermission")
 @Composable
-fun MainScreen( userData: UserData?, onSignOut: () -> Unit) {
+fun MainScreen(userData: UserData?,
+                       onSignOut: () -> Unit,
+                       context: Context) {
+
+    val locationClient = DefaultLocationClient(
+        context,
+        LocationServices.getFusedLocationProviderClient(context)
+    )
     val id = "kiw84ujwe24";
     var showMenu by remember {
         mutableStateOf(false);
     }
-    val clipboardManager: ClipboardManager = LocalClipboardManager.current
-    val singapore = LatLng(1.35, 103.87)
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(singapore, 10f)
+    var myCurrentLocation by remember {
+        mutableStateOf(LatLng(.0, .0))
     }
-    Box(modifier = Modifier.fillMaxSize()) {
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(myCurrentLocation, 15f)
+    }
 
+    val isLastLocationKnown = remember {
+        mutableStateOf(true)
+    }
+    val clipboardManager: ClipboardManager = LocalClipboardManager.current
+    Box(modifier = Modifier.fillMaxSize()) {
+        LaunchedEffect (key1 = null) {
+            val temp = locationClient.getLastLocation().await()
+            if (temp != null) {
+                myCurrentLocation = LatLng(temp.latitude, temp.longitude)
+                cameraPositionState.position = CameraPosition.fromLatLngZoom(myCurrentLocation, 15f)
+                Log.d("AAAAAAAAAAAAAAAAA", "${temp.latitude}")
+            } else {
+                isLastLocationKnown.value = false
+            }
+        }
+        LaunchedEffect (key1 = null) {
+            locationClient.getLocationUpdates(500)
+                .catch { e -> e.printStackTrace() }
+                .onEach { location ->
+                    val lat = location.latitude
+                    val long = location.longitude
+                    myCurrentLocation = LatLng(lat, long)
+                }
+                .launchIn(this)
+        }
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
             properties = MapProperties(mapStyleOptions = MapStyleOptions(if (isSystemInDarkTheme()) styleDark else styleLight)),
             uiSettings = MapUiSettings(zoomControlsEnabled = false, compassEnabled = false)
-        )
+        ) {
+            if (isLastLocationKnown.value) {
+                Marker(
+                    state = MarkerState(position = myCurrentLocation)
+                )
+            }
+        }
         Column (modifier = Modifier
             .align(Alignment.TopCenter)
             .windowInsetsPadding(WindowInsets.statusBars)
@@ -105,6 +164,10 @@ fun MainScreen( userData: UserData?, onSignOut: () -> Unit) {
                                 ambientColor = Color.Black
                             )
                             .clip(CircleShape)
+                            .clickable {
+                                cameraPositionState.position =
+                                    CameraPosition.fromLatLngZoom(myCurrentLocation, 15f)
+                            }
                     )
                 }
                 Spacer(modifier = Modifier.weight(1f))
