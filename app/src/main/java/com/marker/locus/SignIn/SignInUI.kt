@@ -1,4 +1,4 @@
-package com.marker.locus.ui.theme
+package com.marker.locus.SignIn
 
 import android.widget.Toast
 import com.marker.locus.R
@@ -25,7 +25,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.marker.locus.SignIn.SignInState
 
 @Composable
 fun SignInUI(state: SignInState,

@@ -23,7 +23,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.android.gms.auth.api.identity.Identity
 import com.marker.locus.ui.theme.LocusTheme
-import com.marker.locus.ui.theme.SignInUI
+import com.marker.locus.SignIn.SignInUI
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController

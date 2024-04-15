@@ -135,15 +135,29 @@ fun MainScreen(userData: UserData?,
             properties = MapProperties(mapStyleOptions = MapStyleOptions(if (isSystemInDarkTheme()) styleDark else styleLight)),
             uiSettings = MapUiSettings(zoomControlsEnabled = false, compassEnabled = false)
         ) {
-            if (isLastLocationKnown.value) {
-                MyMarker(
-                    userData = userData!!,
-                    userLocation = myCurrentLocation,
-                    cameraPositionState = cameraPositionState
+
+        }
+        if (isLastLocationKnown.value) {
+//                MyMarker(
+//                    userData = userData!!,
+//                    userLocation = myCurrentLocation,
+//                    cameraPositionState = cameraPositionState
+//                )
+            Box(
+                modifier = Modifier
+                    .offset { myCurrentLocation.toPx(cameraPositionState) }.offset(
+                        (-30).dp,
+                        (-30).dp
+                    )
+                    .size(60.dp)
+            ) {
+                Icon(painter = painterResource(id = R.drawable.borow_launcher_foreground),
+                    contentDescription = "aaa",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.fillMaxSize()
                 )
             }
         }
-
         Column (modifier = Modifier
             .align(Alignment.TopCenter)
             .windowInsetsPadding(WindowInsets.statusBars)
@@ -290,15 +304,7 @@ fun MyMarker(userData: UserData,
     var showInfo by remember {
         mutableStateOf(false)
     }
-    Box(
-        modifier = Modifier
-            .offset { userLocation.toPx(cameraPositionState) }
-            .background(color = Color.Red, CircleShape)
-            .size(20.dp)
-    ) {
-        Icon(painter = painterResource(id = R.drawable.borow_launcher_foreground),
-            contentDescription = "aaa")
-    }
+
 }
 
 @Composable
@@ -341,30 +347,4 @@ fun LatLng.toPx(cameraPositionState : CameraPositionState): IntOffset {
         ?.let { point ->
             IntOffset(point.x, point.y)
         } ?: IntOffset.Zero
-}
-
-private fun getBitmapFromImage(context: Context, drawable: Int): Bitmap {
-
-    // on below line we are getting drawable
-    val db = ContextCompat.getDrawable(context, drawable)
-
-    // in below line we are creating our bitmap and initializing it.
-    val bit = Bitmap.createBitmap(
-        db!!.intrinsicWidth, db.intrinsicHeight, Bitmap.Config.ARGB_8888
-    )
-
-    // on below line we are
-    // creating a variable for canvas.
-    val canvas = Canvas(bit)
-
-    // on below line we are setting bounds for our bitmap.
-    db.setBounds(0, 0, canvas.width, canvas.height)
-
-    // on below line we are simply
-    // calling draw to draw our canvas.
-    db.draw(canvas)
-
-    // on below line we are
-    // returning our bitmap.
-    return bit
 }
