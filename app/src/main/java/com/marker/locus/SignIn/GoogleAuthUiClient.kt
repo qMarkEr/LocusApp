@@ -12,6 +12,7 @@ import com.google.firebase.ktx.Firebase
 import com.marker.locus.R
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.tasks.await
+import java.util.UUID
 
 class GoogleAuthUiClient(
     private val context: Context,
@@ -46,7 +47,7 @@ class GoogleAuthUiClient(
                         profilePictureUrl = photoUrl?.toString()
                     )
                 },
-                errorMessage = null
+                errorMessage = null,
             )
         } catch(e: Exception) {
             e.printStackTrace()

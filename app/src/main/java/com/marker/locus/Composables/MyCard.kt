@@ -35,6 +35,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -72,6 +73,7 @@ import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.rememberCameraPositionState
+import com.marker.locus.AllUserData
 import com.marker.locus.Location.DefaultLocationClient
 import com.marker.locus.R
 import com.marker.locus.SignIn.UserData
@@ -85,7 +87,7 @@ import kotlinx.coroutines.tasks.await
 
 @SuppressLint("MissingPermission")
 @Composable
-fun MainScreen(userData: UserData?,
+fun MainScreen(userData: MutableState<AllUserData>,
                onSignOut: () -> Unit,
                context: Context) {
 
@@ -138,11 +140,6 @@ fun MainScreen(userData: UserData?,
 
         }
         if (isLastLocationKnown.value) {
-//                MyMarker(
-//                    userData = userData!!,
-//                    userLocation = myCurrentLocation,
-//                    cameraPositionState = cameraPositionState
-//                )
             Box(
                 modifier = Modifier
                     .offset { myCurrentLocation.toPx(cameraPositionState) }.offset(
@@ -168,33 +165,31 @@ fun MainScreen(userData: UserData?,
                     .fillMaxWidth()
                     .height(100.dp)
             ) {
-                if (userData != null) {
-                    AsyncImage(
-                        model = userData.profilePictureUrl,
-                        contentDescription = "wtf",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .align(Alignment.CenterVertically)
-                            .size(90.dp)
-                            .padding(15.dp)
-                            .shadow(
-                                shape = CircleShape,
-                                elevation = 20.dp,
-                                ambientColor = Color.Black
-                            )
-                            .clip(CircleShape)
-                            .clickable {
-                                scope.launch {
-                                    cameraPositionState.animate(
-                                        update = CameraUpdateFactory.newCameraPosition(
-                                            CameraPosition(myCurrentLocation, 15f, 0f, 0f)
-                                        ),
-                                        durationMs = 700
-                                    )
-                                }
+                AsyncImage(
+                    model = userData.value.publicData.profilePicture,
+                    contentDescription = "wtf",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .align(Alignment.CenterVertically)
+                        .size(90.dp)
+                        .padding(15.dp)
+                        .shadow(
+                            shape = CircleShape,
+                            elevation = 20.dp,
+                            ambientColor = Color.Black
+                        )
+                        .clip(CircleShape)
+                        .clickable {
+                            scope.launch {
+                                cameraPositionState.animate(
+                                    update = CameraUpdateFactory.newCameraPosition(
+                                        CameraPosition(myCurrentLocation, 15f, 0f, 0f)
+                                    ),
+                                    durationMs = 700
+                                )
                             }
-                    )
-                }
+                        }
+                )
                 Spacer(modifier = Modifier.weight(1f))
                 Column(
                     modifier = Modifier
@@ -202,30 +197,28 @@ fun MainScreen(userData: UserData?,
                         .padding(15.dp),
                     horizontalAlignment = Alignment.End
                 ) {
-                    if (userData != null) {
-                        userData.username?.let {
-                            Text(
-                                text = it,
-                                fontFamily = FontFamily.Default,
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 22.sp,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier
-                                    .padding(horizontal = 20.dp, vertical = 5.dp)
-                                    .align(Alignment.End),
-                                textAlign = TextAlign.Center,
-                                style = TextStyle(
-                                    shadow = Shadow(
-                                        color = Color.Black,
-                                        offset = Offset.Zero,
-                                        blurRadius = 50f
-                                    )
+                    userData.value.publicData.userName.let {
+                        Text(
+                            text = it,
+                            fontFamily = FontFamily.Default,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 22.sp,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .padding(horizontal = 20.dp, vertical = 5.dp)
+                                .align(Alignment.End),
+                            textAlign = TextAlign.Center,
+                            style = TextStyle(
+                                shadow = Shadow(
+                                    color = Color.Black,
+                                    offset = Offset.Zero,
+                                    blurRadius = 50f
                                 )
                             )
-                        }
+                        )
                     }
                     Text(
-                        text = "ID: $id",
+                        text = "ID: ${userData.value.privateData.userName}",
                         fontFamily = FontFamily.Default,
                         fontWeight = FontWeight.Light,
                         textAlign = TextAlign.Center,
