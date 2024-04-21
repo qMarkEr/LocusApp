@@ -1,10 +1,5 @@
-package com.marker.locus.Composables
-
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -61,7 +56,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
 import coil.compose.AsyncImage
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -76,7 +70,6 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import com.marker.locus.AllUserData
 import com.marker.locus.Location.DefaultLocationClient
 import com.marker.locus.R
-import com.marker.locus.SignIn.UserData
 import com.marker.locus.ui.theme.styleDark
 import com.marker.locus.ui.theme.styleLight
 import kotlinx.coroutines.flow.catch
@@ -95,9 +88,9 @@ fun MainScreen(userData: MutableState<AllUserData>,
         context,
         LocationServices.getFusedLocationProviderClient(context)
     )
-    val id = "kiw84ujwe24";
+    val id = "kiw84ujwe24"
     var showMenu by remember {
-        mutableStateOf(false);
+        mutableStateOf(false)
     }
     var myCurrentLocation by remember {
         mutableStateOf(LatLng(.0, .0))
@@ -285,51 +278,6 @@ fun MainScreen(userData: MutableState<AllUserData>,
                 )
             }
         }
-    }
-}
-
-@Composable
-fun MyMarker(userData: UserData,
-             userLocation : LatLng,
-             cameraPositionState : CameraPositionState) {
-    // TODO:
-    //  - implement this
-    var showInfo by remember {
-        mutableStateOf(false)
-    }
-
-}
-
-@Composable
-fun LocusMarker(userData: UserData,
-                userLocation : LatLng,
-                cameraPositionState : CameraPositionState) {
-    // TODO:
-    //  - implement this
-    var showInfo by remember {
-        mutableStateOf(false)
-    }
-    Box(
-        modifier = Modifier
-            .offset { userLocation.toPx(cameraPositionState) }
-            .background(color = Color.Red, CircleShape)
-            .size(20.dp)
-            .clickable {
-                showInfo = true
-            }
-    ) {
-        Icon(
-            painter = painterResource(id = R.drawable.borow_launcher_foreground),
-            contentDescription = "aaa",
-            modifier = Modifier
-                .fillMaxSize()
-                .shadow(
-                    shape = CircleShape,
-                    elevation = 15.dp,
-                    ambientColor = Color.Black
-                )
-                .clip(CircleShape)
-        )
     }
 }
 @Stable

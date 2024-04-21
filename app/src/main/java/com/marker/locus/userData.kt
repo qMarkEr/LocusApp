@@ -33,7 +33,7 @@ class AllUserData(
             .await()
     }
 
-    fun createPrivateData() {
+    private fun createPrivateData() {
         Firebase.firestore
             .collection("Private Locus")
             .add(googleData.userId)
