@@ -1,6 +1,8 @@
 package com.marker.locus
 
 import android.util.Log
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
 import com.marker.locus.SignIn.UserData
@@ -11,7 +13,7 @@ class AllUserData(
 ) {
     private val googleData = locusUser
     var publicData : PublicLocusInfo = PublicLocusInfo("" ,"")
-    var privateData : PrivateLocusInfo = PrivateLocusInfo(emptyList(), "")
+    var privateData : PrivateLocusInfo = PrivateLocusInfo(mutableListOf(), "")
 
     suspend fun loadData(){
         publicData.profilePicture = googleData.profilePictureUrl.toString()
@@ -23,7 +25,7 @@ class AllUserData(
                     Log.d("load", googleData.userId)
                     val res = it.toObject(PrivateConvertor::class.java)
                     if (res != null) {
-                        privateData.contacts = res.contacts
+                        privateData.contacts = res.contacts.toMutableList()
                         privateData.userName = res.userName
                     }
                 }
@@ -57,5 +59,24 @@ class AllUserData(
         Firebase.firestore
             .collection("Public Locus").document(privateData.userName)
             .set(publicData).addOnFailureListener { createPublicData() }
+    }
+    fun getContacts() : SnapshotStateList<ContactLocusInfo> {
+        val resultList = SnapshotStateList<ContactLocusInfo>()
+        for (i in privateData.contacts) {
+            Firebase.firestore
+                .collection("Public Locus")
+                .document(i)
+                .get()
+                .addOnSuccessListener {
+                    if (it.exists()) {
+                        val res = it.toObject(PublicLocusInfo::class.java)
+                        if (res != null) {
+                            val newLocus = ContactLocusInfo(res.profilePicture, res.userName, i)
+                            resultList.add(newLocus)
+                        }
+                    }
+                }
+        }
+        return resultList
     }
 }

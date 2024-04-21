@@ -47,6 +47,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -75,7 +76,7 @@ import com.marker.locus.SignIn.GoogleAuthUiClient
 import com.marker.locus.SignIn.SignInViewModel
 import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
-    private val activeContacts = mutableStateListOf("")
+    private var contacts : SnapshotStateList<ContactLocusInfo> = SnapshotStateList()
     private val googleAuthUiClient by lazy {
         GoogleAuthUiClient(
             context = applicationContext,
@@ -132,10 +133,12 @@ class MainActivity : ComponentActivity() {
                     if (siu != null) {
                         data = mutableStateOf(AllUserData(siu))
                         data.value.loadData()
-                        if (data.value.privateData.userName != "")
+                        contacts = data.value.getContacts()
+                        if (data.value.privateData.userName != "") {
                             navController.navigate("profile")
-                        else
+                        } else {
                             navController.navigate("nickname")
+                        }
                     }
                 }
                 val launcher = rememberLauncherForActivityResult(
@@ -163,6 +166,7 @@ class MainActivity : ComponentActivity() {
                             data = mutableStateOf(AllUserData(siu))
                             data.value.loadData()
                             data.value.updatePrivateData()
+                            contacts = data.value.getContacts()
                         }
                         navController.navigate("nickname")
                         viewModel.resetState()
@@ -189,7 +193,7 @@ class MainActivity : ComponentActivity() {
             }
             composable("profile") {
                 MainUI(
-                    activeContacts = activeContacts,
+                    activeContacts = contacts,
                     myData = data,
                     onSignOut = {
                         lifecycleScope.launch {
@@ -210,6 +214,9 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun PublicNameDialog(myData: MutableState<AllUserData>, navController: NavHostController) {
+        if (myData.value.privateData.userName != "") {
+            navController.navigate("profile")
+        }
         var name by remember {
             mutableStateOf("")
         }
@@ -337,6 +344,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+
     }
 
     @Composable

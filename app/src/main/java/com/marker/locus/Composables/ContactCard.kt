@@ -32,7 +32,7 @@ import coil.compose.AsyncImage
 import com.marker.locus.R
 
 @Composable
-fun ContactCard(name : String, id : String, lst : SnapshotStateList<String>) {
+fun ContactCard(name : String, id : String, picture : String) {
     var mode by remember {
         mutableStateOf(false)
     }
@@ -43,7 +43,7 @@ fun ContactCard(name : String, id : String, lst : SnapshotStateList<String>) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         AsyncImage(
-            model = "https://i.redd.it/tatkh3vtw1tc1.jpeg",
+            model = picture,
             contentDescription = "wtf",
             contentScale = ContentScale.Crop,
             modifier = Modifier
@@ -86,10 +86,10 @@ fun ContactCard(name : String, id : String, lst : SnapshotStateList<String>) {
                 .padding(15.dp),
             onClick = {
                 mode = !mode
-                if (mode)
-                    lst += name
-                else
-                    lst -= name
+//                if (mode)
+//                    lst += name
+//                else
+//                    lst -= name
             }
         ) {
             Icon(

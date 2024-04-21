@@ -88,7 +88,6 @@ fun MainScreen(userData: MutableState<AllUserData>,
         context,
         LocationServices.getFusedLocationProviderClient(context)
     )
-    val id = "kiw84ujwe24"
     var showMenu by remember {
         mutableStateOf(false)
     }
@@ -244,7 +243,7 @@ fun MainScreen(userData: MutableState<AllUserData>,
                 )
             }
             ElevatedButton(
-                onClick = { clipboardManager.setText(AnnotatedString(id)) },
+                onClick = { clipboardManager.setText(AnnotatedString(userData.value.privateData.userName)) },
                 modifier = Modifier
                     .padding(15.dp)
                     .size(40.dp),
