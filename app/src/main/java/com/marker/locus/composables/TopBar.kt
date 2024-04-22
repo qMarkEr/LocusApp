@@ -1,4 +1,4 @@
-package com.marker.locus.Composables
+package com.marker.locus.composables
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding

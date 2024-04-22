@@ -1,4 +1,4 @@
-package com.marker.locus.Location
+package com.marker.locus.location
 
 import android.location.Location
 import kotlinx.coroutines.flow.Flow

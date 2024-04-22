@@ -69,8 +69,9 @@ import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.marker.locus.AllUserData
-import com.marker.locus.Location.DefaultLocationClient
+import com.marker.locus.location.DefaultLocationClient
 import com.marker.locus.R
+import com.marker.locus.request.FirebaseService
 import com.marker.locus.ui.theme.styleDark
 import com.marker.locus.ui.theme.styleLight
 import kotlinx.coroutines.flow.catch
@@ -108,6 +109,17 @@ fun MainScreen(
     }
     val scope = rememberCoroutineScope()
     val clipboardManager: ClipboardManager = LocalClipboardManager.current
+    if (FirebaseService.showDialog.value) {
+        AlertDialog(
+            onDismissRequest = {FirebaseService.showDialog.value = false },
+            confirmButton = {  },
+            title = {
+                Text(
+                    text = "GAAAANG"
+                )
+            }
+        )
+    }
     Box(modifier = Modifier.fillMaxSize()) {
         LaunchedEffect (key1 = true) {
             val temp = locationClient.getLastLocation().await()
@@ -120,7 +132,7 @@ fun MainScreen(
         }
         LaunchedEffect (key1 = true) {
             locationClient.getLocationUpdates(500)
-                .catch { e -> e.printStackTrace() }
+                 .catch { e -> e.printStackTrace() }
                 .onEach { location ->
                     val lat = location.latitude
                     val long = location.longitude

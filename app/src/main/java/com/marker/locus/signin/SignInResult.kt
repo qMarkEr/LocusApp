@@ -1,4 +1,4 @@
-package com.marker.locus.SignIn
+package com.marker.locus.signin
 
 data class SignInResult(
     val data: UserData?,

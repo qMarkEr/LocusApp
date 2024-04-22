@@ -1,4 +1,4 @@
-package com.marker.locus.Composables
+package com.marker.locus.composables
 
 import MainScreen
 import android.content.Context

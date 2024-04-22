@@ -1,4 +1,4 @@
-package com.marker.locus.Composables
+package com.marker.locus.composables
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box

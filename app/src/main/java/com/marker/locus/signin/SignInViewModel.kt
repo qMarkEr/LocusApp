@@ -1,4 +1,4 @@
-package com.marker.locus.SignIn
+package com.marker.locus.signin
 
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow

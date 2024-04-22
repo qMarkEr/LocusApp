@@ -1,13 +1,15 @@
 package com.marker.locus
 data class PublicLocusInfo(
     var profilePicture : String = "",
-    var userName : String = ""
+    var userName : String = "",
+    var receiveToken : String = ""
 )
 
 data class ContactLocusInfo(
     var profilePicture : String = "",
     var userName : String = "",
-    var publicName : String = ""
+    var publicName : String = "",
+    var receiveToken: String = ""
 )
 data class PrivateLocusInfo(
     var contacts : MutableList<String>,

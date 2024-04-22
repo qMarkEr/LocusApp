@@ -1,23 +1,33 @@
 package com.marker.locus
 
 import android.util.Log
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import com.google.android.gms.tasks.OnCompleteListener
+import com.google.api.Context
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
-import com.marker.locus.SignIn.UserData
+import com.google.firebase.messaging.FirebaseMessaging
+import com.marker.locus.request.FirebaseService
+import com.marker.locus.signin.UserData
 import kotlinx.coroutines.tasks.await
 
 class AllUserData(
     locusUser : UserData
 ) {
     private val googleData = locusUser
-    var publicData : PublicLocusInfo = PublicLocusInfo("" ,"")
+    var publicData : PublicLocusInfo = PublicLocusInfo()
     var privateData : PrivateLocusInfo = PrivateLocusInfo(mutableListOf(), "")
 
     suspend fun loadData(){
         publicData.profilePicture = googleData.profilePictureUrl.toString()
         publicData.userName = googleData.username.toString()
+        FirebaseMessaging.getInstance().token.addOnCompleteListener(OnCompleteListener { task ->
+            if (!task.isSuccessful) {
+                Log.w("AAAAAAA", "Fetching FCM registration token failed", task.exception)
+                return@OnCompleteListener
+            }
+            publicData.receiveToken = task.result
+        })
         Firebase.firestore.collection("Private Locus")
             .document(googleData.userId)
             .get().addOnSuccessListener {
@@ -71,7 +81,7 @@ class AllUserData(
                     if (it.exists()) {
                         val res = it.toObject(PublicLocusInfo::class.java)
                         if (res != null) {
-                            val newLocus = ContactLocusInfo(res.profilePicture, res.userName, i)
+                            val newLocus = ContactLocusInfo(res.profilePicture, res.userName, i, res.receiveToken)
                             resultList.add(newLocus)
                         }
                     }

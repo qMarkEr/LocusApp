@@ -1,4 +1,4 @@
-package com.marker.locus.SignIn
+package com.marker.locus.signin
 
 import android.widget.Toast
 import com.marker.locus.R

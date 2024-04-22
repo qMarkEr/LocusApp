@@ -1,6 +1,7 @@
 package com.marker.locus
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
@@ -64,15 +65,16 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.google.android.gms.auth.api.identity.Identity
 import com.marker.locus.ui.theme.LocusTheme
-import com.marker.locus.SignIn.SignInUI
+import com.marker.locus.signin.SignInUI
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
-import com.marker.locus.Composables.MainUI
-import com.marker.locus.SignIn.GoogleAuthUiClient
-import com.marker.locus.SignIn.SignInViewModel
+import com.marker.locus.composables.MainUI
+import com.marker.locus.request.FirebaseService
+import com.marker.locus.signin.GoogleAuthUiClient
+import com.marker.locus.signin.SignInViewModel
 import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
     private var contacts : SnapshotStateList<ContactLocusInfo> = SnapshotStateList()
@@ -84,6 +86,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        FirebaseService.sharedPref = getSharedPreferences("sharedPref", Context.MODE_PRIVATE)
         enableEdgeToEdge(
             SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT)
         )

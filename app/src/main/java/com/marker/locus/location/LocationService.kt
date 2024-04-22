@@ -1,4 +1,4 @@
-package com.marker.locus.Location
+package com.marker.locus.location
 
 import android.app.NotificationManager
 import android.app.Service
