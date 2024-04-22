@@ -1,5 +1,6 @@
 package com.marker.locus.Composables
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,11 +14,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,10 +30,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.marker.locus.ContactLocusInfo
 import com.marker.locus.R
 
 @Composable
-fun ContactCard(name : String, id : String, picture : String) {
+fun ContactCard(locus : ContactLocusInfo, delete : MutableState<ContactLocusInfo?>) {
     var mode by remember {
         mutableStateOf(false)
     }
@@ -43,19 +45,22 @@ fun ContactCard(name : String, id : String, picture : String) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         AsyncImage(
-            model = picture,
+            model = locus.profilePicture,
             contentDescription = "wtf",
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .size(80.dp)
                 .padding(15.dp)
                 .clip(CircleShape)
+                .clickable {
+                    delete.value = locus
+                }
         )
         Box (modifier = Modifier
             .fillMaxHeight()
             .padding(horizontal = 0.dp, vertical = 20.dp)) {
             Text(
-                text = name,
+                text = locus.userName,
                 modifier = Modifier.align(Alignment.TopStart),
                 textAlign = TextAlign.Center,
 
@@ -63,7 +68,7 @@ fun ContactCard(name : String, id : String, picture : String) {
                 fontWeight = FontWeight.SemiBold,
                 fontFamily = FontFamily.Default
             )
-            Text(text = "Username: $id",
+            Text(text = "Username: ${locus.publicName}",
                 modifier = Modifier
                     .align(Alignment.BottomStart),
                 textAlign = TextAlign.Center,
@@ -86,10 +91,6 @@ fun ContactCard(name : String, id : String, picture : String) {
                 .padding(15.dp),
             onClick = {
                 mode = !mode
-//                if (mode)
-//                    lst += name
-//                else
-//                    lst -= name
             }
         ) {
             Icon(

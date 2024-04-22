@@ -14,12 +14,7 @@ data class PrivateLocusInfo(
     var userName : String
 )
 
-class PrivateConvertor() {
+class PrivateConvertor {
     val contacts : List<String> = emptyList()
     val userName : String = ""
-}
-
-class PublicConvertor() {
-    val profilePicture: String = ""
-    val userName: String = ""
 }

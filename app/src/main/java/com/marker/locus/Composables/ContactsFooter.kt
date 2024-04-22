@@ -1,5 +1,6 @@
 package com.marker.locus.Composables
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
@@ -40,30 +42,21 @@ import androidx.compose.ui.window.Dialog
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
 import com.marker.locus.AllUserData
-import com.marker.locus.Composables.ContactCard
 import com.marker.locus.ContactLocusInfo
-import com.marker.locus.PrivateConvertor
 import com.marker.locus.PublicLocusInfo
-import kotlinx.coroutines.launch
 
+@SuppressLint("UnrememberedMutableState")
 @Composable
-fun Footer(lst: SnapshotStateList<ContactLocusInfo>?, userData : MutableState<AllUserData>) {
+fun Footer(lst: SnapshotStateList<ContactLocusInfo>?,
+           userData : MutableState<AllUserData>,
+           ) {
     val show = remember {
         mutableStateOf(false)
     }
+    val showDelete : MutableState<ContactLocusInfo?> = mutableStateOf(null)
     Column(modifier = Modifier
         .fillMaxWidth()
-        .height(500.dp)) {
-        Text(
-            text = "My Locuses",
-            fontFamily = FontFamily.Default,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .padding(20.dp),
-            textAlign = TextAlign.Center,
-            fontSize = 30.sp
-        )
+        .height(400.dp)) {
         TextButton(
             onClick = {
                 show.value = true
@@ -79,10 +72,11 @@ fun Footer(lst: SnapshotStateList<ContactLocusInfo>?, userData : MutableState<Al
             Text(text = "Add new")
         }
         AddUserLauncher(show, lst, userData)
+        DeleteUserLauncher(showDelete, lst, userData)
         LazyColumn {
             if (lst != null) {
                 items(lst.size) {
-                    ContactCard(name = lst[it].userName, id = lst[it].publicName, picture = lst[it].profilePicture)
+                    ContactCard(locus = lst[it], showDelete)
                 }
             }
         }
@@ -112,14 +106,14 @@ fun AddUserLauncher(show : MutableState<Boolean>, lst : SnapshotStateList<Contac
                             .padding(30.dp)
                             .align(Alignment.CenterHorizontally),
                         fontFamily = FontFamily.Default,
-                        text = "Enter your unique indetifier",
-                        fontSize = 20.sp,
+                        text = "Enter your friend's identifier",
+                        fontSize = 25.sp,
                         textAlign = TextAlign.Center,
                         fontWeight = FontWeight.SemiBold
                     )
 
                     OutlinedTextField(
-                        label = { Text("Indetifier", fontSize = 15.sp) },
+                        label = { Text("Identifier", fontSize = 15.sp) },
                         modifier = Modifier.padding(horizontal = 20.dp),
                         shape = CircleShape,
                         value = name,
@@ -140,7 +134,7 @@ fun AddUserLauncher(show : MutableState<Boolean>, lst : SnapshotStateList<Contac
                     )
                     if (isError) {
                         Text(
-                            text = "There is no such user",
+                            text = "Some weird identifier",
                             fontSize = 13.sp,
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.displaySmall,
@@ -165,21 +159,24 @@ fun AddUserLauncher(show : MutableState<Boolean>, lst : SnapshotStateList<Contac
                             onClick = {
                                 Firebase.firestore
                                     .collection("Public Locus")
-                                    .document(name)
+                                    .document(name.trim())
                                     .get()
                                     .addOnSuccessListener {
                                         if (it.exists()){
                                             val res = it.toObject(PublicLocusInfo::class.java)
-                                            if (res != null) {
-                                                val newLocus = ContactLocusInfo(res.profilePicture, res.userName, name)
+                                            if (res != null
+                                                && !myData.value.privateData.contacts.contains(name.trim())
+                                                && name.trim() != myData.value.privateData.userName)
+                                            {
+                                                val newLocus = ContactLocusInfo(res.profilePicture, res.userName, name.trim())
                                                 lst?.add(newLocus)
-                                                myData.value.privateData.contacts.add(name)
+                                                myData.value.privateData.contacts.add(name.trim())
                                                 myData.value.updatePrivateData()
                                                 show.value = false
-                                            } else {
+                                            } else
                                                 isError = true
-                                            }
-                                        }
+                                        } else
+                                            isError = true
                                     }
                                     .addOnFailureListener {
                                         isError = true
@@ -194,5 +191,36 @@ fun AddUserLauncher(show : MutableState<Boolean>, lst : SnapshotStateList<Contac
                 }
             }
         }
+    }
+}
+
+@Composable
+fun DeleteUserLauncher(show : MutableState<ContactLocusInfo?>, lst : SnapshotStateList<ContactLocusInfo>?, myData : MutableState<AllUserData>) {
+    if (show.value != null) {
+        AlertDialog(
+            onDismissRequest = { 
+                show.value = null
+            }, 
+            confirmButton = {
+                TextButton(onClick = {
+                    myData.value.privateData.contacts.remove(show.value!!.publicName)
+                    lst?.remove(show.value!!)
+                    myData.value.updatePrivateData()
+                    show.value = null
+                }) {
+                    Text(text = "Yeah")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    show.value = null
+                }) {
+                    Text(text = "Nah")
+                }
+            },
+            title = {
+                Text(text = "Want to delete this locus?")
+            }
+        )
     }
 }

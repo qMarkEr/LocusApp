@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ElevatedButton
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -78,11 +79,15 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
+
+@OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("MissingPermission")
 @Composable
-fun MainScreen(userData: MutableState<AllUserData>,
-               onSignOut: () -> Unit,
-               context: Context) {
+fun MainScreen(
+    userData: MutableState<AllUserData>,
+    onSignOut: () -> Unit,
+    context: Context
+) {
 
     val locationClient = DefaultLocationClient(
         context,
@@ -134,7 +139,8 @@ fun MainScreen(userData: MutableState<AllUserData>,
         if (isLastLocationKnown.value) {
             Box(
                 modifier = Modifier
-                    .offset { myCurrentLocation.toPx(cameraPositionState) }.offset(
+                    .offset { myCurrentLocation.toPx(cameraPositionState) }
+                    .offset(
                         (-30).dp,
                         (-30).dp
                     )
