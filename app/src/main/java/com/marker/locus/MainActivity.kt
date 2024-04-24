@@ -48,6 +48,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -78,6 +79,7 @@ import com.marker.locus.signin.SignInViewModel
 import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
     private var contacts : SnapshotStateList<ContactLocusInfo> = SnapshotStateList()
+    private var activeContacts : SnapshotStateMap<String, ActiveContact> = SnapshotStateMap()
     private val googleAuthUiClient by lazy {
         GoogleAuthUiClient(
             context = applicationContext,
@@ -195,7 +197,8 @@ class MainActivity : ComponentActivity() {
             }
             composable("profile") {
                 MainUI(
-                    activeContacts = contacts,
+                    contacts = contacts,
+                    activeContacts = activeContacts,
                     myData = data,
                     onSignOut = {
                         lifecycleScope.launch {

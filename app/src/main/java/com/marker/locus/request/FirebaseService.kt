@@ -19,12 +19,12 @@ import com.marker.locus.R
 import kotlin.random.Random
 
 private const val CHANNEL_ID = "my_channel"
-
 class FirebaseService : FirebaseMessagingService() {
 
     companion object {
         var sharedPref: SharedPreferences? = null
         val showDialog : MutableState<Boolean> = mutableStateOf(false)
+        var sender = ""
         var token: String?
             get() {
                 return sharedPref?.getString("token", "")
@@ -44,9 +44,7 @@ class FirebaseService : FirebaseMessagingService() {
         val intent = Intent(this, MainActivity::class.java)
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val notificationID = Random.nextInt()
-
         createNotificationChannel(notificationManager)
-
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
         val pendingIntent = PendingIntent.getActivity(this, 0, intent,
             FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE)
@@ -57,7 +55,7 @@ class FirebaseService : FirebaseMessagingService() {
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .build()
-
+        sender = message.data["message"].toString()
         notificationManager.notify(notificationID, notification)
         showDialog.value = true
     }

@@ -20,7 +20,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Locus"
         tools:targetApi="34">
-
+        <service android:name=".location.LocationService" android:foregroundServiceType="location" />
         <service android:name=".request.FirebaseService"
             android:permission="com.google.android.c2dm.permission.SEND"
             android:exported="true">

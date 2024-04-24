@@ -19,7 +19,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,13 +31,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.android.gms.maps.model.LatLng
+import com.marker.locus.ActiveContact
 import com.marker.locus.AllUserData
 import com.marker.locus.ContactLocusInfo
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainUI(activeContacts : SnapshotStateList<ContactLocusInfo>?,
-           myData : MutableState<AllUserData>,
+fun MainUI(contacts: SnapshotStateList<ContactLocusInfo>,
+           activeContacts: SnapshotStateMap<String, ActiveContact>,
+           myData: MutableState<AllUserData>,
            onSignOut: () -> Unit,
            context: Context
     ) {
@@ -43,11 +49,12 @@ fun MainUI(activeContacts : SnapshotStateList<ContactLocusInfo>?,
     )
     BottomSheetScaffold (
         sheetContent = {
-            Footer(lst = activeContacts, myData)
+            Footer(contacts = contacts, activeContacts = activeContacts, myData)
         },
         scaffoldState = scaffoldState,
         content = {
             MainScreen(
+                activeContacts,
                 myData,
                 onSignOut,
                 context

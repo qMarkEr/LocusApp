@@ -2,9 +2,11 @@ package com.marker.locus
 
 import android.util.Log
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.tasks.OnCompleteListener
 import com.google.api.Context
 import com.google.firebase.Firebase
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.firestore
 import com.google.firebase.messaging.FirebaseMessaging
 import com.marker.locus.request.FirebaseService
@@ -90,3 +92,15 @@ class AllUserData(
         return resultList
     }
 }
+
+data class ActiveContact(
+    val picture : String = "",
+    val doc : String = "",
+    var listener : ListenerRegistration? = null,
+    var location : LatLng = LatLng(.0, .0)
+)
+
+data class LatLngConvertor(
+    val latitude : Double = 0.0,
+    val longitude : Double = 0.0
+)

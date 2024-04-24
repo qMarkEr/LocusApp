@@ -1,13 +1,27 @@
 package com.marker.locus.location
 
+
+import android.annotation.SuppressLint
+import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.os.IBinder
+import android.util.Log
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.core.app.NotificationCompat
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.model.LatLng
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
+import com.marker.locus.LatLngConvertor
 import com.marker.locus.R
+import com.marker.locus.request.FirebaseService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -41,14 +55,21 @@ class LocationService: Service() {
         return super.onStartCommand(intent, flags, startId)
     }
 
+    @SuppressLint("ForegroundServiceType")
     private fun start() {
+        val channel = NotificationChannel(
+            "location",
+            "Location",
+            NotificationManager.IMPORTANCE_LOW
+        )
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.createNotificationChannel(channel)
         val notification = NotificationCompat.Builder(this, "location")
-            .setContentTitle("Tracking location...")
-            .setContentText("Location: null")
-            .setSmallIcon(R.drawable.ic_launcher_background)
+            .setContentTitle("I'm always watching you")
+            .setContentText("You are at the middle of nowhere")
+            .setSmallIcon(R.drawable.borow_launcher_foreground_icon)
             .setOngoing(true)
 
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         locationClient
             .getLocationUpdates(500)
@@ -57,13 +78,24 @@ class LocationService: Service() {
                 val lat = location.latitude.toString()
                 val long = location.longitude.toString()
                 val updatedNotification = notification.setContentText(
-                    "Location: ($lat, $long)"
+                    "You are at: ($lat, $long)"
                 )
-                notificationManager.notify(1, updatedNotification.build())
+                for (i in doc) {
+                    Firebase.firestore.collection("locator")
+                        .document(i)
+                        .update(
+                            mapOf(
+                                "latitude" to location.latitude,
+                                "longitude" to location.longitude
+                            )
+                        ).addOnFailureListener {
+                            stop()
+                        }
+                }
+                notificationManager.notify(2, updatedNotification.build())
             }
             .launchIn(serviceScope)
-
-        startForeground(1, notification.build())
+        startForeground(2, notification.build())
     }
 
     private fun stop() {
@@ -76,6 +108,7 @@ class LocationService: Service() {
     }
 
     companion object {
+        var doc : SnapshotStateList<String> = SnapshotStateList()
         const val ACTION_START = "ACTION_START"
         const val ACTION_STOP = "ACTION_STOP"
     }

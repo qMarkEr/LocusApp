@@ -1,7 +1,6 @@
 package com.marker.locus.composables
 
 import android.annotation.SuppressLint
-import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -32,6 +31,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
@@ -40,25 +40,19 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
-import com.google.gson.Gson
+import com.marker.locus.ActiveContact
 import com.marker.locus.AllUserData
 import com.marker.locus.ContactLocusInfo
 import com.marker.locus.PublicLocusInfo
-import com.marker.locus.request.NotificationData
-import com.marker.locus.request.PushNotification
-import com.marker.locus.request.RetrofitInstance
-import kotlinx.coroutines.CoroutineExceptionHandler
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
 @SuppressLint("UnrememberedMutableState")
 @Composable
-fun Footer(lst: SnapshotStateList<ContactLocusInfo>?,
-           userData : MutableState<AllUserData>,
-           ) {
+fun Footer( contacts: SnapshotStateList<ContactLocusInfo>,
+            activeContacts: SnapshotStateMap<String, ActiveContact>,
+            userData: MutableState<AllUserData> ) {
     val show = remember {
         mutableStateOf(false)
     }
@@ -80,13 +74,11 @@ fun Footer(lst: SnapshotStateList<ContactLocusInfo>?,
             Spacer(modifier = Modifier.width(8.dp))
             Text(text = "Add new")
         }
-        AddUserLauncher(show, lst, userData)
-        DeleteUserLauncher(showDelete, lst, userData)
+        AddUserLauncher(show, contacts, userData)
+        DeleteUserLauncher(showDelete, contacts, userData)
         LazyColumn {
-            if (lst != null) {
-                items(lst.size) {
-                    ContactCard(locus = lst[it], showDelete)
-                }
+            items(contacts.size) {
+                ContactCard(contacts[it], showDelete, userData, activeContacts)
             }
         }
     }
@@ -178,18 +170,10 @@ fun AddUserLauncher(show : MutableState<Boolean>, lst : SnapshotStateList<Contac
                                                 && name.trim() != myData.value.privateData.userName)
                                             {
                                                 val newLocus = ContactLocusInfo(res.profilePicture, res.userName, name.trim(), res.receiveToken)
-                                                PushNotification(
-                                                    NotificationData("Locus request",
-                                                        myData.value.privateData.userName
-                                                    ),
-                                                    newLocus.receiveToken
-                                                ).also { noti ->
-                                                    sendNotification(noti)
-                                                }
-                                                //lst?.add(newLocus)
-                                                //myData.value.privateData.contacts.add(name.trim())
-                                                //myData.value.updatePrivateData()
-                                                //show.value = false
+                                                lst?.add(newLocus)
+                                                myData.value.privateData.contacts.add(name.trim())
+                                                myData.value.updatePrivateData()
+                                                show.value = false
                                             } else
                                                 isError = true
                                         } else
@@ -239,21 +223,5 @@ fun DeleteUserLauncher(show : MutableState<ContactLocusInfo?>, lst : SnapshotSta
                 Text(text = "Want to delete this locus?")
             }
         )
-    }
-}
-
-private fun sendNotification(notification: PushNotification) =
-    CoroutineScope(Dispatchers.IO +
-            CoroutineExceptionHandler{_, throwable -> throwable.printStackTrace()})
-        .launch {
-    try {
-        val response = RetrofitInstance.api.postNotification(notification)
-        if(response.isSuccessful) {
-            Log.d("AAAAAA", "Response: ${Gson().toJson(response)}")
-        } else {
-            Log.e("AAAAAA", response.errorBody().toString())
-        }
-    } catch(e: Exception) {
-        Log.e("AAAAAA", e.toString())
     }
 }

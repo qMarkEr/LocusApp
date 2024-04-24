@@ -1,5 +1,7 @@
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -22,9 +24,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ElevatedButton
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -38,6 +40,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -63,14 +66,19 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MapStyleOptions
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 import com.google.maps.android.compose.CameraPositionState
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.rememberCameraPositionState
+import com.marker.locus.ActiveContact
 import com.marker.locus.AllUserData
+import com.marker.locus.LatLngConvertor
 import com.marker.locus.location.DefaultLocationClient
 import com.marker.locus.R
+import com.marker.locus.location.LocationService
 import com.marker.locus.request.FirebaseService
 import com.marker.locus.ui.theme.styleDark
 import com.marker.locus.ui.theme.styleLight
@@ -81,15 +89,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 
-@OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("MissingPermission")
 @Composable
 fun MainScreen(
+    activeContacts: SnapshotStateMap<String, ActiveContact>,
     userData: MutableState<AllUserData>,
     onSignOut: () -> Unit,
     context: Context
 ) {
-
     val locationClient = DefaultLocationClient(
         context,
         LocationServices.getFusedLocationProviderClient(context)
@@ -103,7 +110,9 @@ fun MainScreen(
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(myCurrentLocation, 15f)
     }
-
+    val share = remember {
+        mutableStateOf(false)
+    }
     val isLastLocationKnown = remember {
         mutableStateOf(true)
     }
@@ -111,8 +120,28 @@ fun MainScreen(
     val clipboardManager: ClipboardManager = LocalClipboardManager.current
     if (FirebaseService.showDialog.value) {
         AlertDialog(
-            onDismissRequest = {FirebaseService.showDialog.value = false },
-            confirmButton = {  },
+            onDismissRequest = {
+                FirebaseService.showDialog.value = false
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        LocationService.doc.add(userData.value.privateData.userName + FirebaseService.sender)
+                        Firebase.firestore
+                            .collection("locator")
+                            .document(LocationService.doc.last())
+                            .set(LatLngConvertor(.0, .0))
+                        Intent(context, LocationService::class.java).apply {
+                            action = LocationService.ACTION_START
+                            context.startService(this)
+                        }
+                        share.value = true
+                        FirebaseService.showDialog.value = false
+                    }
+                ) {
+                    Text(text = "rwignwpirg")
+                }
+            },
             title = {
                 Text(
                     text = "GAAAANG"
@@ -145,10 +174,8 @@ fun MainScreen(
             cameraPositionState = cameraPositionState,
             properties = MapProperties(mapStyleOptions = MapStyleOptions(if (isSystemInDarkTheme()) styleDark else styleLight)),
             uiSettings = MapUiSettings(zoomControlsEnabled = false, compassEnabled = false)
-        ) {
-
-        }
-        if (isLastLocationKnown.value) {
+        )
+         if (isLastLocationKnown.value) {
             Box(
                 modifier = Modifier
                     .offset { myCurrentLocation.toPx(cameraPositionState) }
@@ -160,10 +187,30 @@ fun MainScreen(
             ) {
                 Icon(painter = painterResource(id = R.drawable.borow_launcher_foreground),
                     contentDescription = "aaa",
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = MaterialTheme.colorScheme.background,
                     modifier = Modifier.fillMaxSize()
                 )
             }
+        }
+        for (i in activeContacts) {
+          //  if (i.value.location.latitude != .0 && i.value.location.longitude != .0) {
+                Box(
+                    modifier = Modifier
+                        .offset { i.value.location.toPx(cameraPositionState) }
+                        .offset(
+                            (-15).dp,
+                            (-15).dp
+                        )
+                        .size(30.dp)
+                        .clip(CircleShape)
+                ) {
+                    AsyncImage(model = i.value.picture,
+                        contentDescription = "aaa",
+                        modifier = Modifier.fillMaxSize()
+                            .clip(CircleShape)
+                    )
+                }
+            //}
         }
         Column (modifier = Modifier
             .align(Alignment.TopCenter)
