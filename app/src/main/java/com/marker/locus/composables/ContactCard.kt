@@ -1,5 +1,7 @@
 package com.marker.locus.composables
 
+import android.content.Context
+import android.content.Intent
 import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -11,10 +13,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,6 +40,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.auth.ActionCodeEmailInfo
+import com.google.firebase.auth.ktx.userProfileChangeRequest
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
@@ -44,6 +50,7 @@ import com.marker.locus.AllUserData
 import com.marker.locus.ContactLocusInfo
 import com.marker.locus.LatLngConvertor
 import com.marker.locus.R
+import com.marker.locus.location.LocationService
 import com.marker.locus.request.NotificationData
 import com.marker.locus.request.PushNotification
 import com.marker.locus.request.RetrofitInstance
@@ -56,12 +63,19 @@ import kotlinx.coroutines.launch
 fun ContactCard(locus : ContactLocusInfo,
                 delete : MutableState<ContactLocusInfo?>,
                 myData : MutableState<AllUserData>,
-                activeContacts : SnapshotStateMap<String, ActiveContact>
+                activeContacts : SnapshotStateMap<String, ActiveContact>,
+                context : Context,
+                request : MutableState<String>
 ) {
+    val req = remember {
+        mutableStateOf(request.value)
+    }
     var mode by remember {
         mutableStateOf(false)
     }
-    val snaplis : MutableState<ListenerRegistration?> = remember { mutableStateOf(null) }
+    var share by remember {
+        mutableStateOf(false)
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -102,12 +116,40 @@ fun ContactCard(locus : ContactLocusInfo,
                 fontFamily = FontFamily.Default
             )
         }
-
         Spacer(
             Modifier
                 .weight(2f)
                 .fillMaxHeight()
         )
+        if (req.value == locus.publicName) {
+            IconButton(modifier = Modifier
+                .align(Alignment.CenterVertically)
+                .size(70.dp)
+                .padding(15.dp),
+                onClick = {
+                    Intent(context, LocationService::class.java).apply {
+                        action = LocationService.ACTION_STOP
+                        context.startService(this)
+                    }
+                    Firebase.firestore.collection("locator")
+                        .document(myData.value.privateData.userName + locus.publicName)
+                        .delete()
+                    req.value = ""
+                }
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "action"
+                )
+            }
+            // WHAT THE HEEEEEEEEEEEEEEEEEEELLLL
+            Firebase.firestore.collection("locator")
+                .document(myData.value.privateData.userName + locus.publicName)
+                .get().addOnSuccessListener { doc ->
+                    if (!doc.exists())
+                        req.value = ""
+                }
+        }
         IconButton(
             modifier = Modifier
                 .align(Alignment.CenterVertically)
@@ -125,24 +167,28 @@ fun ContactCard(locus : ContactLocusInfo,
                     ).also { noti ->
                         sendNotification(noti)
                     }
-                    Log.d("lexa", locus.publicName + myData.value.privateData.userName)
-                    val temp = ActiveContact(
-                        doc = locus.publicName + myData.value.privateData.userName,
-                        picture = locus.profilePicture
-                    )
+
                     val listener = Firebase.firestore.collection("locator")
                         .document(locus.publicName + myData.value.privateData.userName)
                         .addSnapshotListener { snapshot, _ ->
                             if (snapshot != null) {
                                 val res = snapshot.toObject(LatLngConvertor::class.java)
                                 if (res != null) {
-                                    Log.d("latlan", res.longitude.toString())
-                                    temp.location = LatLng(res.latitude, res.longitude)
+                                    activeContacts[locus.publicName + myData.value.privateData.userName] = ActiveContact(
+                                        doc = locus.publicName + myData.value.privateData.userName,
+                                        picture = locus.profilePicture,
+                                        location = LatLng(res.latitude, res.longitude)
+                                    )
+                                    mode = true
+                                    share = true
+                                } else {
+                                    share = false
+                                    mode = false
+                                    activeContacts.remove(locus.publicName + myData.value.privateData.userName)
                                 }
                             }
                         }
-                    temp.listener = listener
-                    activeContacts[locus.publicName + myData.value.privateData.userName] = temp
+                    activeContacts[locus.publicName + myData.value.privateData.userName]?.listener = listener
                 }
                 else {
                     activeContacts[locus.publicName + myData.value.privateData.userName]?.listener?.remove()
@@ -150,12 +196,13 @@ fun ContactCard(locus : ContactLocusInfo,
                     Firebase.firestore.collection("locator")
                         .document(locus.publicName + myData.value.privateData.userName)
                         .delete()
+                    share = false
                 }
             }
         ) {
             Icon(
                 painter = painterResource(id =
-                if (mode)
+                if (share)
                     R.drawable.cancel_locating
                 else
                     R.drawable.locate

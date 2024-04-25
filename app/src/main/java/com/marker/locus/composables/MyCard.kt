@@ -110,45 +110,12 @@ fun MainScreen(
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(myCurrentLocation, 15f)
     }
-    val share = remember {
-        mutableStateOf(false)
-    }
     val isLastLocationKnown = remember {
         mutableStateOf(true)
     }
     val scope = rememberCoroutineScope()
     val clipboardManager: ClipboardManager = LocalClipboardManager.current
-    if (FirebaseService.showDialog.value) {
-        AlertDialog(
-            onDismissRequest = {
-                FirebaseService.showDialog.value = false
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        LocationService.doc.add(userData.value.privateData.userName + FirebaseService.sender)
-                        Firebase.firestore
-                            .collection("locator")
-                            .document(LocationService.doc.last())
-                            .set(LatLngConvertor(.0, .0))
-                        Intent(context, LocationService::class.java).apply {
-                            action = LocationService.ACTION_START
-                            context.startService(this)
-                        }
-                        share.value = true
-                        FirebaseService.showDialog.value = false
-                    }
-                ) {
-                    Text(text = "rwignwpirg")
-                }
-            },
-            title = {
-                Text(
-                    text = "GAAAANG"
-                )
-            }
-        )
-    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         LaunchedEffect (key1 = true) {
             val temp = locationClient.getLastLocation().await()
@@ -187,7 +154,7 @@ fun MainScreen(
             ) {
                 Icon(painter = painterResource(id = R.drawable.borow_launcher_foreground),
                     contentDescription = "aaa",
-                    tint = MaterialTheme.colorScheme.background,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.fillMaxSize()
                 )
             }

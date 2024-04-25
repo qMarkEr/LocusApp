@@ -1,6 +1,8 @@
 package com.marker.locus.composables
 
 import android.annotation.SuppressLint
+import android.content.Context
+import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -43,20 +45,60 @@ import androidx.compose.ui.window.Dialog
 import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
+import com.google.firebase.firestore.ktx.firestore
 import com.marker.locus.ActiveContact
 import com.marker.locus.AllUserData
 import com.marker.locus.ContactLocusInfo
+import com.marker.locus.LatLngConvertor
 import com.marker.locus.PublicLocusInfo
+import com.marker.locus.location.LocationService
+import com.marker.locus.request.FirebaseService
 
 @SuppressLint("UnrememberedMutableState")
 @Composable
 fun Footer( contacts: SnapshotStateList<ContactLocusInfo>,
             activeContacts: SnapshotStateMap<String, ActiveContact>,
-            userData: MutableState<AllUserData> ) {
+            userData: MutableState<AllUserData>,
+            context : Context) {
     val show = remember {
         mutableStateOf(false)
     }
+    val acceptedRequest = remember {
+        mutableStateOf("")
+    }
+
     val showDelete : MutableState<ContactLocusInfo?> = mutableStateOf(null)
+    if (FirebaseService.showDialog.value) {
+        AlertDialog(
+            onDismissRequest = {
+                FirebaseService.showDialog.value = false
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        acceptedRequest.value = FirebaseService.sender
+                        LocationService.doc.add(userData.value.privateData.userName + FirebaseService.sender)
+                        com.google.firebase.ktx.Firebase.firestore
+                            .collection("locator")
+                            .document(LocationService.doc.last())
+                            .set(LatLngConvertor(.0, .0))
+                        Intent(context, LocationService::class.java).apply {
+                            action = LocationService.ACTION_START
+                            context.startService(this)
+                        }
+                        FirebaseService.showDialog.value = false
+                    }
+                ) {
+                    Text(text = "Accept")
+                }
+            },
+            title = {
+                Text(
+                    text = "Location request"
+                )
+            }
+        )
+    }
     Column(modifier = Modifier
         .fillMaxWidth()
         .height(400.dp)) {
@@ -78,7 +120,7 @@ fun Footer( contacts: SnapshotStateList<ContactLocusInfo>,
         DeleteUserLauncher(showDelete, contacts, userData)
         LazyColumn {
             items(contacts.size) {
-                ContactCard(contacts[it], showDelete, userData, activeContacts)
+                ContactCard(contacts[it], showDelete, userData, activeContacts, context, acceptedRequest)
             }
         }
     }

@@ -2,6 +2,7 @@ package com.marker.locus.composables
 
 import MainScreen
 import android.content.Context
+import android.content.Intent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -9,9 +10,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 //noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.material3.BottomSheetScaffold
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -32,9 +35,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.android.gms.maps.model.LatLng
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 import com.marker.locus.ActiveContact
 import com.marker.locus.AllUserData
 import com.marker.locus.ContactLocusInfo
+import com.marker.locus.LatLngConvertor
+import com.marker.locus.location.LocationService
+import com.marker.locus.request.FirebaseService
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,7 +57,7 @@ fun MainUI(contacts: SnapshotStateList<ContactLocusInfo>,
     )
     BottomSheetScaffold (
         sheetContent = {
-            Footer(contacts = contacts, activeContacts = activeContacts, myData)
+            Footer(contacts = contacts, activeContacts = activeContacts, myData, context)
         },
         scaffoldState = scaffoldState,
         content = {
