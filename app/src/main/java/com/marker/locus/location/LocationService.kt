@@ -8,20 +8,12 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.os.IBinder
-import android.util.Log
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.core.app.NotificationCompat
 import com.google.android.gms.location.LocationServices
-import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
-import com.marker.locus.LatLngConvertor
 import com.marker.locus.R
-import com.marker.locus.request.FirebaseService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -70,7 +62,6 @@ class LocationService: Service() {
             .setSmallIcon(R.drawable.borow_launcher_foreground_icon)
             .setOngoing(true)
 
-
         locationClient
             .getLocationUpdates(500)
             .catch { e -> e.printStackTrace() }
@@ -89,10 +80,13 @@ class LocationService: Service() {
                                 "longitude" to location.longitude
                             )
                         ).addOnFailureListener {
-                            stop()
+                            doc.remove(i)
                         }
+                    notificationManager.notify(2, updatedNotification.build())
                 }
-                notificationManager.notify(2, updatedNotification.build())
+                if (doc.isEmpty()) {
+                    stop()
+                }
             }
             .launchIn(serviceScope)
         startForeground(2, notification.build())

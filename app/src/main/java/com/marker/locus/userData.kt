@@ -4,12 +4,10 @@ import android.util.Log
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.tasks.OnCompleteListener
-import com.google.api.Context
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.firestore
 import com.google.firebase.messaging.FirebaseMessaging
-import com.marker.locus.request.FirebaseService
 import com.marker.locus.signin.UserData
 import kotlinx.coroutines.tasks.await
 

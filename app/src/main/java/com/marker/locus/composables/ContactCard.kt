@@ -1,7 +1,5 @@
 package com.marker.locus.composables
 
-import android.content.Context
-import android.content.Intent
 import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -13,19 +11,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,9 +33,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.google.android.gms.maps.model.LatLng
-import com.google.firebase.auth.ActionCodeEmailInfo
-import com.google.firebase.auth.ktx.userProfileChangeRequest
-import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.google.gson.Gson
@@ -50,7 +41,6 @@ import com.marker.locus.AllUserData
 import com.marker.locus.ContactLocusInfo
 import com.marker.locus.LatLngConvertor
 import com.marker.locus.R
-import com.marker.locus.location.LocationService
 import com.marker.locus.request.NotificationData
 import com.marker.locus.request.PushNotification
 import com.marker.locus.request.RetrofitInstance
@@ -58,18 +48,15 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.math.BigInteger
+import java.security.MessageDigest
 
 @Composable
 fun ContactCard(locus : ContactLocusInfo,
                 delete : MutableState<ContactLocusInfo?>,
                 myData : MutableState<AllUserData>,
-                activeContacts : SnapshotStateMap<String, ActiveContact>,
-                context : Context,
-                request : MutableState<String>
+                activeContacts : SnapshotStateMap<String, ActiveContact>
 ) {
-    val req = remember {
-        mutableStateOf(request.value)
-    }
     var mode by remember {
         mutableStateOf(false)
     }
@@ -121,35 +108,6 @@ fun ContactCard(locus : ContactLocusInfo,
                 .weight(2f)
                 .fillMaxHeight()
         )
-        if (req.value == locus.publicName) {
-            IconButton(modifier = Modifier
-                .align(Alignment.CenterVertically)
-                .size(70.dp)
-                .padding(15.dp),
-                onClick = {
-                    Intent(context, LocationService::class.java).apply {
-                        action = LocationService.ACTION_STOP
-                        context.startService(this)
-                    }
-                    Firebase.firestore.collection("locator")
-                        .document(myData.value.privateData.userName + locus.publicName)
-                        .delete()
-                    req.value = ""
-                }
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "action"
-                )
-            }
-            // WHAT THE HEEEEEEEEEEEEEEEEEEELLLL
-            Firebase.firestore.collection("locator")
-                .document(myData.value.privateData.userName + locus.publicName)
-                .get().addOnSuccessListener { doc ->
-                    if (!doc.exists())
-                        req.value = ""
-                }
-        }
         IconButton(
             modifier = Modifier
                 .align(Alignment.CenterVertically)
@@ -169,13 +127,13 @@ fun ContactCard(locus : ContactLocusInfo,
                     }
 
                     val listener = Firebase.firestore.collection("locator")
-                        .document(locus.publicName + myData.value.privateData.userName)
+                        .document(md5(locus.publicName + myData.value.privateData.userName))
                         .addSnapshotListener { snapshot, _ ->
                             if (snapshot != null) {
                                 val res = snapshot.toObject(LatLngConvertor::class.java)
                                 if (res != null) {
-                                    activeContacts[locus.publicName + myData.value.privateData.userName] = ActiveContact(
-                                        doc = locus.publicName + myData.value.privateData.userName,
+                                    activeContacts[md5(locus.publicName + myData.value.privateData.userName)] = ActiveContact(
+                                        doc = md5(locus.publicName + myData.value.privateData.userName),
                                         picture = locus.profilePicture,
                                         location = LatLng(res.latitude, res.longitude)
                                     )
@@ -184,17 +142,17 @@ fun ContactCard(locus : ContactLocusInfo,
                                 } else {
                                     share = false
                                     mode = false
-                                    activeContacts.remove(locus.publicName + myData.value.privateData.userName)
+                                    activeContacts.remove(md5(locus.publicName + myData.value.privateData.userName))
                                 }
                             }
                         }
-                    activeContacts[locus.publicName + myData.value.privateData.userName]?.listener = listener
+                    activeContacts[md5(locus.publicName + myData.value.privateData.userName)]?.listener = listener
                 }
                 else {
-                    activeContacts[locus.publicName + myData.value.privateData.userName]?.listener?.remove()
-                    activeContacts.remove(locus.publicName + myData.value.privateData.userName)
+                    activeContacts[md5(locus.publicName + myData.value.privateData.userName)]?.listener?.remove()
+                    activeContacts.remove(md5(locus.publicName + myData.value.privateData.userName))
                     Firebase.firestore.collection("locator")
-                        .document(locus.publicName + myData.value.privateData.userName)
+                        .document(md5(locus.publicName + myData.value.privateData.userName))
                         .delete()
                     share = false
                 }
@@ -228,3 +186,8 @@ private fun sendNotification(notification: PushNotification) =
                 Log.e("AAAAAA", e.toString())
             }
         }
+
+fun md5(input:String): String {
+    val md = MessageDigest.getInstance("MD5")
+    return BigInteger(1, md.digest(input.toByteArray())).toString(16).padStart(32, '0')
+}

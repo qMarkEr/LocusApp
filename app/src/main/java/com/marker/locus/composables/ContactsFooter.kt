@@ -42,7 +42,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
 import com.google.firebase.firestore.ktx.firestore
@@ -77,7 +76,7 @@ fun Footer( contacts: SnapshotStateList<ContactLocusInfo>,
                 Button(
                     onClick = {
                         acceptedRequest.value = FirebaseService.sender
-                        LocationService.doc.add(userData.value.privateData.userName + FirebaseService.sender)
+                        LocationService.doc.add(md5(userData.value.privateData.userName + FirebaseService.sender))
                         com.google.firebase.ktx.Firebase.firestore
                             .collection("locator")
                             .document(LocationService.doc.last())
@@ -120,7 +119,7 @@ fun Footer( contacts: SnapshotStateList<ContactLocusInfo>,
         DeleteUserLauncher(showDelete, contacts, userData)
         LazyColumn {
             items(contacts.size) {
-                ContactCard(contacts[it], showDelete, userData, activeContacts, context, acceptedRequest)
+                ContactCard(contacts[it], showDelete, userData, activeContacts)
             }
         }
     }

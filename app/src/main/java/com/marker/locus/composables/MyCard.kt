@@ -1,7 +1,5 @@
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.Intent
-import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -22,9 +20,9 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.Icon
@@ -75,11 +73,9 @@ import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.marker.locus.ActiveContact
 import com.marker.locus.AllUserData
-import com.marker.locus.LatLngConvertor
 import com.marker.locus.location.DefaultLocationClient
 import com.marker.locus.R
 import com.marker.locus.location.LocationService
-import com.marker.locus.request.FirebaseService
 import com.marker.locus.ui.theme.styleDark
 import com.marker.locus.ui.theme.styleLight
 import kotlinx.coroutines.flow.catch
@@ -160,24 +156,22 @@ fun MainScreen(
             }
         }
         for (i in activeContacts) {
-          //  if (i.value.location.latitude != .0 && i.value.location.longitude != .0) {
-                Box(
-                    modifier = Modifier
-                        .offset { i.value.location.toPx(cameraPositionState) }
-                        .offset(
-                            (-15).dp,
-                            (-15).dp
-                        )
-                        .size(30.dp)
-                        .clip(CircleShape)
-                ) {
-                    AsyncImage(model = i.value.picture,
-                        contentDescription = "aaa",
-                        modifier = Modifier.fillMaxSize()
-                            .clip(CircleShape)
+            Box(
+                modifier = Modifier
+                    .offset { i.value.location.toPx(cameraPositionState) }
+                    .offset(
+                        (-15).dp,
+                        (-15).dp
                     )
-                }
-            //}
+                    .size(30.dp)
+                    .clip(CircleShape)
+            ) {
+                AsyncImage(model = i.value.picture,
+                    contentDescription = "aaa",
+                    modifier = Modifier.fillMaxSize()
+                        .clip(CircleShape)
+                )
+            }
         }
         Column (modifier = Modifier
             .align(Alignment.TopCenter)
@@ -287,6 +281,27 @@ fun MainScreen(
                     contentDescription = "aa",
                     tint = MaterialTheme.colorScheme.primary
                 )
+            }
+            if (!LocationService.doc.isEmpty()) {
+                ElevatedButton(
+                    onClick = {
+                            for (i in LocationService.doc)
+                                Firebase.firestore.collection("locator")
+                                    .document(i).delete()
+                            LocationService.doc.clear()
+                            },
+                    modifier = Modifier
+                        .padding(15.dp)
+                        .size(40.dp),
+                    contentPadding = PaddingValues(1.dp),
+                    elevation = ButtonDefaults.elevatedButtonElevation(10.dp)
+
+                ) {
+                    Icon(imageVector = Icons.Default.Clear,
+                        contentDescription = "aa",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
             if (showMenu) {
                 AlertDialog(onDismissRequest = { showMenu = !showMenu },
