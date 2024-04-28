@@ -1,6 +1,8 @@
 package com.marker.locus
 
 import android.util.Log
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.tasks.OnCompleteListener
@@ -10,15 +12,26 @@ import com.google.firebase.firestore.firestore
 import com.google.firebase.messaging.FirebaseMessaging
 import com.marker.locus.signin.UserData
 import kotlinx.coroutines.tasks.await
+import okio.ByteString.Companion.toByteString
+import java.security.KeyPair
+import java.security.KeyPairGenerator
+import java.security.spec.ECGenParameterSpec
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 
 class AllUserData(
     locusUser : UserData
 ) {
+    val keyGen = KeyPairGenerator.getInstance("ECDH", "SC")
+    val ecsp = ECGenParameterSpec("secp256r1")
+    lateinit var myKeyPair : KeyPair
     private val googleData = locusUser
     var publicData : PublicLocusInfo = PublicLocusInfo()
     var privateData : PrivateLocusInfo = PrivateLocusInfo(mutableListOf(), "")
 
     suspend fun loadData(){
+        keyGen.initialize(ecsp)
+        myKeyPair = keyGen.generateKeyPair()
         publicData.profilePicture = googleData.profilePictureUrl.toString()
         publicData.userName = googleData.username.toString()
         FirebaseMessaging.getInstance().token.addOnCompleteListener(OnCompleteListener { task ->
@@ -43,8 +56,18 @@ class AllUserData(
                 createPrivateData()
             }
             .await()
+        postKeys()
     }
-
+    @OptIn(ExperimentalEncodingApi::class)
+    fun postKeys() {
+        Firebase.firestore.collection("keyStore")
+            .document(privateData.userName)
+            .set(
+                mapOf(
+                    "key" to Base64.encode(myKeyPair.public.encoded)
+                )
+            )
+    }
     private fun createPrivateData() {
         Firebase.firestore
             .collection("Private Locus")
@@ -99,6 +122,6 @@ data class ActiveContact(
 )
 
 data class LatLngConvertor(
-    val latitude : Double = 0.0,
-    val longitude : Double = 0.0
+    val latitude : String = "",
+    val longitude : String = ""
 )

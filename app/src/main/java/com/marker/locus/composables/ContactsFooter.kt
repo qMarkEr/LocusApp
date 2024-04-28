@@ -3,6 +3,7 @@ package com.marker.locus.composables
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -48,17 +49,32 @@ import com.google.firebase.firestore.ktx.firestore
 import com.marker.locus.ActiveContact
 import com.marker.locus.AllUserData
 import com.marker.locus.ContactLocusInfo
+import com.marker.locus.CryptoManager
+import com.marker.locus.KeyExtractor
 import com.marker.locus.LatLngConvertor
 import com.marker.locus.PublicLocusInfo
 import com.marker.locus.location.LocationService
 import com.marker.locus.request.FirebaseService
+import org.spongycastle.asn1.x9.ECNamedCurveTable
+import org.spongycastle.jce.spec.ECNamedCurveSpec
+import java.security.KeyFactory
+import java.security.interfaces.ECPublicKey
+import java.security.spec.ECParameterSpec
+import java.security.spec.X509EncodedKeySpec
+import javax.crypto.KeyAgreement
+import javax.crypto.spec.SecretKeySpec
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 
+
+@OptIn(ExperimentalEncodingApi::class)
 @SuppressLint("UnrememberedMutableState")
 @Composable
-fun Footer( contacts: SnapshotStateList<ContactLocusInfo>,
-            activeContacts: SnapshotStateMap<String, ActiveContact>,
-            userData: MutableState<AllUserData>,
-            context : Context) {
+fun Footer(contacts: SnapshotStateList<ContactLocusInfo>,
+           activeContacts: SnapshotStateMap<String, ActiveContact>,
+           userData: MutableState<AllUserData>,
+           context : Context
+) {
     val show = remember {
         mutableStateOf(false)
     }
@@ -80,11 +96,32 @@ fun Footer( contacts: SnapshotStateList<ContactLocusInfo>,
                         com.google.firebase.ktx.Firebase.firestore
                             .collection("locator")
                             .document(LocationService.doc.last())
-                            .set(LatLngConvertor(.0, .0))
+                            .set(mapOf(
+                                "latitude" to "",
+                                "longitude" to ""
+                            ))
                         Intent(context, LocationService::class.java).apply {
                             action = LocationService.ACTION_START
                             context.startService(this)
                         }
+                        com.google.firebase.ktx.Firebase.firestore.collection("keyStore")
+                            .document(FirebaseService.sender)
+                            .get()
+                            .addOnSuccessListener {
+                                val res = it.toObject(KeyExtractor::class.java)
+                                if (res != null) {
+                                    val key = KeyFactory.getInstance("ECDH")
+                                        .generatePublic(X509EncodedKeySpec(Base64.decode(res.key)))
+                                    val ka = KeyAgreement.getInstance("ECDH", "SC")
+                                    ka.init(userData.value.myKeyPair.private)
+                                    ka.doPhase(key, true)
+                                    val ss = ka.generateSecret()
+                                    CryptoManager.sharedSecret[md5(userData.value.privateData.userName + FirebaseService.sender)] = SecretKeySpec(ss, 0, ss.size, "AES")
+                                    Log.d("KEYS", Base64.encode(ka.generateSecret()))
+                                    userData.value.myKeyPair = userData.value.keyGen.genKeyPair()
+                                    userData.value.postKeys()
+                                }
+                            }
                         FirebaseService.showDialog.value = false
                     }
                 ) {

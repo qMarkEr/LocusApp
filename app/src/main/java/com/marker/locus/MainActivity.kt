@@ -64,20 +64,26 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import com.google.android.gms.auth.api.identity.Identity
-import com.marker.locus.ui.theme.LocusTheme
-import com.marker.locus.signin.SignInUI
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.google.android.gms.auth.api.identity.Identity
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
 import com.marker.locus.composables.MainUI
 import com.marker.locus.request.FirebaseService
 import com.marker.locus.signin.GoogleAuthUiClient
+import com.marker.locus.signin.SignInUI
 import com.marker.locus.signin.SignInViewModel
+import com.marker.locus.ui.theme.LocusTheme
 import kotlinx.coroutines.launch
+import java.security.KeyPair
+import java.security.KeyPairGenerator
+import java.security.Security
+import java.security.spec.ECGenParameterSpec
+
 class MainActivity : ComponentActivity() {
+
     private var contacts : SnapshotStateList<ContactLocusInfo> = SnapshotStateList()
     private var activeContacts : SnapshotStateMap<String, ActiveContact> = SnapshotStateMap()
     private val googleAuthUiClient by lazy {
@@ -88,6 +94,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        Security.insertProviderAt(org.spongycastle.jce.provider.BouncyCastleProvider(), 1)
         FirebaseService.sharedPref = getSharedPreferences("sharedPref", Context.MODE_PRIVATE)
         enableEdgeToEdge(
             SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT)
@@ -138,6 +145,7 @@ class MainActivity : ComponentActivity() {
                         data = mutableStateOf(AllUserData(siu))
                         data.value.loadData()
                         contacts = data.value.getContacts()
+
                         if (data.value.privateData.userName != "") {
                             navController.navigate("profile")
                         } else {

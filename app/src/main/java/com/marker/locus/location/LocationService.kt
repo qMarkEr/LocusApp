@@ -13,6 +13,8 @@ import androidx.core.app.NotificationCompat
 import com.google.android.gms.location.LocationServices
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import com.marker.locus.CryptoManager
+import com.marker.locus.CryptoManager.Companion.sharedSecret
 import com.marker.locus.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -72,17 +74,25 @@ class LocationService: Service() {
                     "You are at: ($lat, $long)"
                 )
                 for (i in doc) {
-                    Firebase.firestore.collection("locator")
-                        .document(i)
-                        .update(
-                            mapOf(
-                                "latitude" to location.latitude,
-                                "longitude" to location.longitude
-                            )
-                        ).addOnFailureListener {
-                            doc.remove(i)
-                        }
-                    notificationManager.notify(2, updatedNotification.build())
+                    if (sharedSecret[i] != null) {
+                        Firebase.firestore.collection("locator")
+                            .document(i)
+                            .update(
+                                mapOf(
+                                    "latitude" to CryptoManager.aesEncrypt(
+                                        lat.encodeToByteArray(),
+                                        i
+                                    ),
+                                    "longitude" to CryptoManager.aesEncrypt(
+                                        long.encodeToByteArray(),
+                                        i
+                                    )
+                                )
+                            ).addOnFailureListener {
+                                doc.remove(i)
+                            }
+                        notificationManager.notify(2, updatedNotification.build())
+                    }
                 }
                 if (doc.isEmpty()) {
                     stop()
@@ -102,6 +112,7 @@ class LocationService: Service() {
     }
 
     companion object {
+
         var doc : SnapshotStateList<String> = SnapshotStateList()
         const val ACTION_START = "ACTION_START"
         const val ACTION_STOP = "ACTION_STOP"

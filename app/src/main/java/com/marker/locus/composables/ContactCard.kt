@@ -39,8 +39,12 @@ import com.google.gson.Gson
 import com.marker.locus.ActiveContact
 import com.marker.locus.AllUserData
 import com.marker.locus.ContactLocusInfo
+import com.marker.locus.CryptoManager
+import com.marker.locus.KeyExtractor
 import com.marker.locus.LatLngConvertor
 import com.marker.locus.R
+import com.marker.locus.location.LocationService
+import com.marker.locus.request.FirebaseService
 import com.marker.locus.request.NotificationData
 import com.marker.locus.request.PushNotification
 import com.marker.locus.request.RetrofitInstance
@@ -48,9 +52,19 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import java.math.BigInteger
+import java.security.KeyFactory
 import java.security.MessageDigest
+import java.security.PublicKey
+import java.security.interfaces.ECPublicKey
+import java.security.spec.X509EncodedKeySpec
+import javax.crypto.KeyAgreement
+import javax.crypto.spec.SecretKeySpec
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 
+@OptIn(ExperimentalEncodingApi::class)
 @Composable
 fun ContactCard(locus : ContactLocusInfo,
                 delete : MutableState<ContactLocusInfo?>,
@@ -125,20 +139,49 @@ fun ContactCard(locus : ContactLocusInfo,
                     ).also { noti ->
                         sendNotification(noti)
                     }
-
+                    Firebase.firestore.collection("keyStore")
+                        .document(locus.publicName)
+                        .get()
+                        .addOnSuccessListener {
+                            val res = it.toObject(KeyExtractor::class.java)
+                            Log.d("AAAAA", "AAAAAAAAAAAAAAAAAAAA")
+                            if (res != null) {
+                                val key = KeyFactory.getInstance("ECDH")
+                                    .generatePublic(X509EncodedKeySpec(Base64.decode(res.key)))
+                                val ka = KeyAgreement.getInstance("ECDH", "SC")
+                                ka.init(myData.value.myKeyPair.private)
+                                ka.doPhase(key, true)
+                                Log.d("KEYS", Base64.encode(ka.generateSecret()))
+                                val ss = ka.generateSecret()
+                                CryptoManager.sharedSecret[md5(locus.publicName + myData.value.privateData.userName)] = SecretKeySpec(ss, 0, ss.size, "AES")
+                            }
+                        }
                     val listener = Firebase.firestore.collection("locator")
                         .document(md5(locus.publicName + myData.value.privateData.userName))
                         .addSnapshotListener { snapshot, _ ->
                             if (snapshot != null) {
                                 val res = snapshot.toObject(LatLngConvertor::class.java)
                                 if (res != null) {
-                                    activeContacts[md5(locus.publicName + myData.value.privateData.userName)] = ActiveContact(
-                                        doc = md5(locus.publicName + myData.value.privateData.userName),
-                                        picture = locus.profilePicture,
-                                        location = LatLng(res.latitude, res.longitude)
-                                    )
-                                    mode = true
-                                    share = true
+                                    if ((res.latitude != "" && res.longitude != "") &&
+                                        CryptoManager.sharedSecret[md5(locus.publicName + myData.value.privateData.userName)] != null) {
+                                        val lat = CryptoManager.aesDecrypt(
+                                            Base64.decode(res.latitude),
+                                            md5(locus.publicName + myData.value.privateData.userName)
+                                        ).toString(Charsets.UTF_8)
+
+                                        val long = CryptoManager.aesDecrypt(
+                                            Base64.decode(res.longitude),
+                                            md5(locus.publicName + myData.value.privateData.userName)
+                                        ).toString(Charsets.UTF_8)
+                                        activeContacts[md5(locus.publicName + myData.value.privateData.userName)] =
+                                            ActiveContact(
+                                                doc = md5(locus.publicName + myData.value.privateData.userName),
+                                                picture = locus.profilePicture,
+                                                location = LatLng(lat.toDouble(), long.toDouble())
+                                            )
+                                        mode = true
+                                        share = true
+                                    }
                                 } else {
                                     share = false
                                     mode = false

@@ -20,3 +20,7 @@ class PrivateConvertor {
     val contacts : List<String> = emptyList()
     val userName : String = ""
 }
+
+data class KeyExtractor (
+    var key : String = ""
+)

@@ -31,6 +31,8 @@ import androidx.compose.ui.unit.sp
 import com.marker.locus.ActiveContact
 import com.marker.locus.AllUserData
 import com.marker.locus.ContactLocusInfo
+import java.security.KeyPair
+import java.security.KeyPairGenerator
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
