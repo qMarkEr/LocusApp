@@ -79,17 +79,20 @@ class LocationService: Service() {
                             .document(i)
                             .update(
                                 mapOf(
-                                    "latitude" to CryptoManager.aesEncrypt(
-                                        lat.encodeToByteArray(),
-                                        i
-                                    ),
-                                    "longitude" to CryptoManager.aesEncrypt(
-                                        long.encodeToByteArray(),
-                                        i
-                                    )
+                                    "latitude" to lat,
+//                                            CryptoManager.aesEncrypt(
+//                                        lat.encodeToByteArray(),
+//                                        i
+//                                  ),
+                                    "longitude" to long
+//                                            CryptoManager.aesEncrypt(
+//                                        long.encodeToByteArray(),
+//                                        i
+//                                  )
                                 )
                             ).addOnFailureListener {
                                 doc.remove(i)
+                                sharedSecret.remove(i)
                             }
                         notificationManager.notify(2, updatedNotification.build())
                     }
@@ -112,7 +115,6 @@ class LocationService: Service() {
     }
 
     companion object {
-
         var doc : SnapshotStateList<String> = SnapshotStateList()
         const val ACTION_START = "ACTION_START"
         const val ACTION_STOP = "ACTION_STOP"

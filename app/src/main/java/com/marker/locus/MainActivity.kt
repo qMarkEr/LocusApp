@@ -8,6 +8,7 @@ import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -57,6 +58,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.marker.locus.location.LocationApp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -77,15 +79,17 @@ import com.marker.locus.signin.SignInUI
 import com.marker.locus.signin.SignInViewModel
 import com.marker.locus.ui.theme.LocusTheme
 import kotlinx.coroutines.launch
-import java.security.KeyPair
-import java.security.KeyPairGenerator
 import java.security.Security
-import java.security.spec.ECGenParameterSpec
+import javax.crypto.SecretKey
+import javax.crypto.spec.SecretKeySpec
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 
 class MainActivity : ComponentActivity() {
 
     private var contacts : SnapshotStateList<ContactLocusInfo> = SnapshotStateList()
     private var activeContacts : SnapshotStateMap<String, ActiveContact> = SnapshotStateMap()
+    private val database by lazy { MainDB.createDataBase(this) }
     private val googleAuthUiClient by lazy {
         GoogleAuthUiClient(
             context = applicationContext,
@@ -106,7 +110,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    PermissionLauncher()
+                    PermissionLauncher(database)
                 }
             }
         }
@@ -131,8 +135,9 @@ class MainActivity : ComponentActivity() {
         else "Denied"
     }
 
+    @OptIn(ExperimentalEncodingApi::class)
     @Composable
-    private fun SignInController() {
+    private fun SignInController(database: MainDB) {
         val navController = rememberNavController()
         NavHost(navController = navController, startDestination = "sign_in") {
             lateinit var data: MutableState<AllUserData>
@@ -145,7 +150,12 @@ class MainActivity : ComponentActivity() {
                         data = mutableStateOf(AllUserData(siu))
                         data.value.loadData()
                         contacts = data.value.getContacts()
-
+                        activeContacts = data.value.getActiveContacts()
+                        for (i in activeContacts.values) {
+                            val ss = Base64.decode(database.dao.getUserWithName(i.doc))
+                            CryptoManager.sharedSecret[i.doc] = SecretKeySpec(ss, 0, ss.size, "AES")
+                            Log.d("LOADEDAAAAAAAAA", database.dao.getUserWithName(i.doc))
+                        }
                         if (data.value.privateData.userName != "") {
                             navController.navigate("profile")
                         } else {
@@ -179,6 +189,8 @@ class MainActivity : ComponentActivity() {
                             data.value.loadData()
                             data.value.updatePrivateData()
                             contacts = data.value.getContacts()
+                            activeContacts =  data.value.getActiveContacts()
+                            data.value.postKeys()
                         }
                         navController.navigate("nickname")
                         viewModel.resetState()
@@ -202,6 +214,7 @@ class MainActivity : ComponentActivity() {
             }
             composable("nickname") {
                 PublicNameDialog(myData = data, navController)
+
             }
             composable("profile") {
                 MainUI(
@@ -219,7 +232,8 @@ class MainActivity : ComponentActivity() {
                             navController.navigate("sign_in")
                         }
                     },
-                    applicationContext
+                    applicationContext,
+                    database
                 )
             }
         }
@@ -323,6 +337,7 @@ class MainActivity : ComponentActivity() {
                                                 "Signed out",
                                                 Toast.LENGTH_LONG
                                             ).show()
+
                                             navController.navigate("sign_in")
                                         }
                                     },
@@ -340,6 +355,7 @@ class MainActivity : ComponentActivity() {
                                                     myData.value.privateData.userName = name
                                                     myData.value.updatePrivateData()
                                                     myData.value.updatePublicData()
+                                                    myData.value.postKeys()
                                                     navController.navigate("profile")
                                                 } else {
                                                     isError = true
@@ -361,7 +377,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun PermissionLauncher() {
+    fun PermissionLauncher(database: MainDB) {
         var locationPermissionsGranted by remember { mutableStateOf(areLocationPermissionsAlreadyGranted()) }
         var shouldShowPermissionRationale by remember {
             mutableStateOf(
@@ -416,7 +432,7 @@ class MainActivity : ComponentActivity() {
         )
 
         if (areLocationPermissionsAlreadyGranted())
-            SignInController()
+            SignInController(database)
 
         if (shouldShowPermissionRationale) {
             AlertDialog(
@@ -470,6 +486,5 @@ class MainActivity : ComponentActivity() {
                 }
             )
         }
-
     }
 }

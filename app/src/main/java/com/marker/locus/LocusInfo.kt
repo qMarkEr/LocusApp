@@ -13,10 +13,12 @@ data class ContactLocusInfo(
 )
 data class PrivateLocusInfo(
     var contacts : MutableList<String>,
-    var userName : String
+    var userName : String,
+    var activeContacts : MutableList<String>
 )
 
 class PrivateConvertor {
+    var activeContacts : List<String> = emptyList()
     val contacts : List<String> = emptyList()
     val userName : String = ""
 }

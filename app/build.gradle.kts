@@ -3,6 +3,16 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
     id("com.google.gms.google-services")
+    id("com.google.devtools.ksp")
+    id("androidx.room")
+}
+
+ksp {
+    arg("option_name", "option_value")
+}
+
+room {
+    schemaDirectory("$projectDir/schemas/")
 }
 
 android {
@@ -32,11 +42,11 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "17"
     }
     buildFeatures {
         compose = true
@@ -57,6 +67,15 @@ android {
 
 
 dependencies {
+    implementation("androidx.legacy:legacy-support-v4:1.0.0")
+    val room_version = "2.6.0"
+    implementation("androidx.room:room-runtime:$room_version")
+    annotationProcessor("androidx.room:room-compiler:$room_version")
+    implementation("com.android.support:support-v4:28.0.0")
+    implementation("androidx.annotation:annotation:1.7.1")
+    implementation("androidx.room:room-common:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+
     implementation("com.google.android.gms:play-services-location:21.2.0")
     implementation("androidx.core:core-ktx:1.13.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
@@ -73,6 +92,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
     implementation("com.google.firebase:firebase-firestore-ktx:24.11.1")
     implementation("com.google.firebase:firebase-messaging-ktx:23.4.1")
+    implementation("com.android.support:support-annotations:28.0.0")
     testImplementation("junit:junit:4.13.2")
     implementation("com.google.android.gms:play-services-auth:21.1.0")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
@@ -85,6 +105,8 @@ dependencies {
     implementation("com.madgag.spongycastle:core:1.58.0.0")
     implementation("com.madgag.spongycastle:prov:1.58.0.0")
     implementation("com.madgag.spongycastle:bctls-jdk15on:1.58.0.0")
+
+    ksp("androidx.room:room-compiler:$room_version")
 
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.5.0")

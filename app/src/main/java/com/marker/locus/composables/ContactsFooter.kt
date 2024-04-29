@@ -51,15 +51,12 @@ import com.marker.locus.AllUserData
 import com.marker.locus.ContactLocusInfo
 import com.marker.locus.CryptoManager
 import com.marker.locus.KeyExtractor
-import com.marker.locus.LatLngConvertor
+import com.marker.locus.MainActivity
+import com.marker.locus.MainDB
 import com.marker.locus.PublicLocusInfo
 import com.marker.locus.location.LocationService
 import com.marker.locus.request.FirebaseService
-import org.spongycastle.asn1.x9.ECNamedCurveTable
-import org.spongycastle.jce.spec.ECNamedCurveSpec
 import java.security.KeyFactory
-import java.security.interfaces.ECPublicKey
-import java.security.spec.ECParameterSpec
 import java.security.spec.X509EncodedKeySpec
 import javax.crypto.KeyAgreement
 import javax.crypto.spec.SecretKeySpec
@@ -70,10 +67,12 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 @OptIn(ExperimentalEncodingApi::class)
 @SuppressLint("UnrememberedMutableState")
 @Composable
-fun Footer(contacts: SnapshotStateList<ContactLocusInfo>,
-           activeContacts: SnapshotStateMap<String, ActiveContact>,
-           userData: MutableState<AllUserData>,
-           context : Context
+fun Footer(
+    contacts: SnapshotStateList<ContactLocusInfo>,
+    activeContacts: SnapshotStateMap<String, ActiveContact>,
+    userData: MutableState<AllUserData>,
+    context: Context,
+    database: MainDB
 ) {
     val show = remember {
         mutableStateOf(false)
@@ -156,7 +155,7 @@ fun Footer(contacts: SnapshotStateList<ContactLocusInfo>,
         DeleteUserLauncher(showDelete, contacts, userData)
         LazyColumn {
             items(contacts.size) {
-                ContactCard(contacts[it], showDelete, userData, activeContacts)
+                ContactCard(contacts[it], showDelete, userData, activeContacts, database)
             }
         }
     }

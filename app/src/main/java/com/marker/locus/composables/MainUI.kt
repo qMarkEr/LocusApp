@@ -31,23 +31,25 @@ import androidx.compose.ui.unit.sp
 import com.marker.locus.ActiveContact
 import com.marker.locus.AllUserData
 import com.marker.locus.ContactLocusInfo
-import java.security.KeyPair
-import java.security.KeyPairGenerator
+import com.marker.locus.MainActivity
+import com.marker.locus.MainDB
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainUI(contacts: SnapshotStateList<ContactLocusInfo>,
-           activeContacts: SnapshotStateMap<String, ActiveContact>,
-           myData: MutableState<AllUserData>,
-           onSignOut: () -> Unit,
-           context: Context
-    ) {
+fun MainUI(
+    contacts: SnapshotStateList<ContactLocusInfo>,
+    activeContacts: SnapshotStateMap<String, ActiveContact>,
+    myData: MutableState<AllUserData>,
+    onSignOut: () -> Unit,
+    context: Context,
+    database: MainDB
+) {
     val scaffoldState = rememberBottomSheetScaffoldState(
         bottomSheetState = rememberStandardBottomSheetState()
     )
     BottomSheetScaffold (
         sheetContent = {
-            Footer(contacts = contacts, activeContacts = activeContacts, myData, context)
+            Footer(contacts = contacts, activeContacts = activeContacts, myData, context, database)
         },
         scaffoldState = scaffoldState,
         content = {
