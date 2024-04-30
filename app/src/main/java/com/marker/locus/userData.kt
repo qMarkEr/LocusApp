@@ -152,6 +152,8 @@ class AllUserData(
                                                     )
                                             }
                                         } else {
+                                            CryptoManager.sharedSecret.remove(docName)
+                                            CryptoManager.deleteKey(docName)
                                             resultList.remove(docName)
                                         }
                                     }

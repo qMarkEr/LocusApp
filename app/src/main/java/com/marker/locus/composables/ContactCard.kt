@@ -137,31 +137,34 @@ fun ContactCard(locus : ContactLocusInfo,
                     ).also { noti ->
                         sendNotification(noti)
                     }
-
-                    Firebase.firestore.collection("keyStore")
-                        .document(locus.publicName)
-                        .get()
-                        .addOnSuccessListener {
-                            val res = it.toObject(KeyExtractor::class.java)
-                            if (res != null) {
-                                val key = KeyFactory.getInstance("ECDH")
-                                    .generatePublic(X509EncodedKeySpec(Base64.decode(res.key)))
-                                val ka = KeyAgreement.getInstance("ECDH", "SC")
-                                ka.init(myData.value.myKeyPair.private)
-                                ka.doPhase(key, true)
-                                val ss = ka.generateSecret()
-                                Log.d("KEYS", Base64.encode(ss))
-                                CryptoManager.sharedSecret[docName] = SecretKeySpec(ss, 0, ss.size, "AES")
-                                CryptoManager.addKey(docName, Base64.encode(ss))
-                            }
-                        }
-
                     val listener = Firebase.firestore.collection("locator")
                         .document(md5(locus.publicName + myData.value.privateData.userName))
                         .addSnapshotListener { snapshot, _ ->
                             if (snapshot != null) {
                                 val res = snapshot.toObject(LatLngConvertor::class.java)
                                 if (res != null) {
+                                    if (!CryptoManager.sharedSecret.keys.contains(docName)) {
+                                        Firebase.firestore.collection("keyStore")
+                                            .document(locus.publicName)
+                                            .get()
+                                            .addOnSuccessListener {
+                                                val reskey = it.toObject(KeyExtractor::class.java)
+                                                if (reskey != null) {
+                                                    val key = KeyFactory.getInstance("ECDH")
+                                                        .generatePublic(X509EncodedKeySpec(Base64.decode(reskey.key)))
+                                                    val ka = KeyAgreement.getInstance("ECDH", "SC")
+                                                    ka.init(myData.value.myKeyPair.private)
+                                                    ka.doPhase(key, true)
+                                                    val ss = ka.generateSecret()
+                                                    Log.d("KEYS", Base64.encode(ss))
+                                                    CryptoManager.sharedSecret[docName] = SecretKeySpec(ss, 0, ss.size, "AES")
+                                                    CryptoManager.addKey(docName, Base64.encode(ss))
+                                                }
+                                            }
+                                    } else {
+                                        myData.value.myKeyPair = myData.value.keyGen.genKeyPair()
+                                        myData.value.postKeys()
+                                    }
                                     if ((res.latitude != "" && res.longitude != "") &&
                                         CryptoManager.sharedSecret[docName] != null) {
                                         val lat = CryptoManager.aesDecrypt(
@@ -178,9 +181,7 @@ fun ContactCard(locus : ContactLocusInfo,
                                                 doc = docName,
                                                 picture = locus.profilePicture,
                                                 location = LatLng(lat.toDouble(), long.toDouble())
-//                                                location = LatLng(res.latitude.toDouble(), res.longitude.toDouble())
                                             )
-
                                         mode = true
                                         share = true
                                         if (!myData.value.privateData.activeContacts.contains(locus.publicName)) {
@@ -192,6 +193,8 @@ fun ContactCard(locus : ContactLocusInfo,
                                     share = false
                                     mode = false
                                     activeContacts.remove(docName)
+                                    CryptoManager.sharedSecret.remove(docName)
+                                    CryptoManager.deleteKey(docName)
                                     myData.value.privateData.activeContacts.remove(locus.publicName)
                                     myData.value.updatePrivateData()
                                 }
@@ -199,7 +202,6 @@ fun ContactCard(locus : ContactLocusInfo,
                         }
                     activeContacts[md5(locus.publicName + myData.value.privateData.userName)]
                         ?.listener = listener
-
                 }
                 else {
                     activeContacts[docName]?.listener?.remove()
@@ -210,6 +212,7 @@ fun ContactCard(locus : ContactLocusInfo,
                     share = false
                     myData.value.privateData.activeContacts.remove(locus.publicName)
                     myData.value.updatePrivateData()
+                    CryptoManager.sharedSecret.remove(docName)
                     CryptoManager.deleteKey(docName)
                 }
             }

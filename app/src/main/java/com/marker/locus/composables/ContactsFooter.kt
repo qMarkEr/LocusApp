@@ -114,8 +114,6 @@ fun Footer(
                                     val ss = ka.generateSecret()
                                     CryptoManager.sharedSecret[md5(userData.value.privateData.userName + FirebaseService.sender)] = SecretKeySpec(ss, 0, ss.size, "AES")
                                     Log.d("KEYS", Base64.encode(ss))
-                                    userData.value.myKeyPair = userData.value.keyGen.genKeyPair()
-                                    userData.value.postKeys()
                                 }
                             }
                         FirebaseService.showDialog.value = false
