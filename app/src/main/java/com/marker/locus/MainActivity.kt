@@ -182,7 +182,8 @@ class MainActivity : ComponentActivity() {
                             data.value.updatePrivateData()
                             contacts = data.value.getContacts()
                             activeContacts =  data.value.getActiveContacts()
-                            data.value.postKeys()
+                            if (data.value.privateData.userName != "")
+                                data.value.postKeys()
                         }
                         navController.navigate("nickname")
                         viewModel.resetState()
