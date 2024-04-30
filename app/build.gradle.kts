@@ -3,17 +3,8 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
     id("com.google.gms.google-services")
-    id("com.google.devtools.ksp")
-    id("androidx.room")
 }
 
-ksp {
-    arg("option_name", "option_value")
-}
-
-room {
-    schemaDirectory("$projectDir/schemas/")
-}
 
 android {
     namespace = "com.marker.locus"
@@ -53,7 +44,7 @@ android {
         buildConfig = true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.4.3"
+        kotlinCompilerExtensionVersion = "1.5.3"
     }
     packaging {
         resources {
@@ -68,13 +59,6 @@ android {
 
 dependencies {
     implementation("androidx.legacy:legacy-support-v4:1.0.0")
-    val room_version = "2.6.0"
-    implementation("androidx.room:room-runtime:$room_version")
-    annotationProcessor("androidx.room:room-compiler:$room_version")
-    implementation("com.android.support:support-v4:28.0.0")
-    implementation("androidx.annotation:annotation:1.7.1")
-    implementation("androidx.room:room-common:2.6.1")
-    implementation("androidx.room:room-ktx:2.6.1")
 
     implementation("com.google.android.gms:play-services-location:21.2.0")
     implementation("androidx.core:core-ktx:1.13.0")
@@ -105,8 +89,6 @@ dependencies {
     implementation("com.madgag.spongycastle:core:1.58.0.0")
     implementation("com.madgag.spongycastle:prov:1.58.0.0")
     implementation("com.madgag.spongycastle:bctls-jdk15on:1.58.0.0")
-
-    ksp("androidx.room:room-compiler:$room_version")
 
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.5.0")

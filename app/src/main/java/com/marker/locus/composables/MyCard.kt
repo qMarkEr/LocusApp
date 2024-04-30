@@ -1,5 +1,6 @@
 import android.annotation.SuppressLint
 import android.content.Context
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -83,8 +84,6 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import java.security.KeyPair
-import java.security.KeyPairGenerator
 
 
 @SuppressLint("MissingPermission")
@@ -124,6 +123,7 @@ fun MainScreen(
                 isLastLocationKnown.value = false
             }
         }
+        Log.d("ACTIVE", activeContacts.size.toString())
         LaunchedEffect (key1 = true) {
             locationClient.getLocationUpdates(500)
                  .catch { e -> e.printStackTrace() }

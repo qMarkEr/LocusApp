@@ -1,27 +1,34 @@
 package com.marker.locus
 
-import android.content.Context
+import android.annotation.SuppressLint
+import android.content.SharedPreferences
 import androidx.compose.runtime.snapshots.SnapshotStateMap
-import androidx.room.Dao
-import androidx.room.Database
-import androidx.room.Delete
-import androidx.room.Entity
-import androidx.room.Insert
-import androidx.room.PrimaryKey
-import androidx.room.Query
-import androidx.room.Update
 import javax.crypto.Cipher
 import javax.crypto.SecretKey
 import javax.crypto.spec.IvParameterSpec
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
-import androidx.room.Room
-import androidx.room.RoomDatabase
+import javax.crypto.spec.SecretKeySpec
 
 
 @OptIn(ExperimentalEncodingApi::class)
 class CryptoManager {
     companion object {
+        var sharedPref: SharedPreferences? = null
+        fun loadKey(doc : String) {
+            val str = sharedPref?.getString(doc, "")?.let { Base64.decode(it) }
+            if (str != null) {
+                sharedSecret[doc] = SecretKeySpec(str, 0, str.size, "AES")
+            }
+        }
+        fun addKey(doc : String, key : String) {
+            sharedPref?.edit()?.putString(doc, key)?.apply()
+        }
+
+        @SuppressLint("CommitPrefEdits")
+        fun deleteKey(doc : String) {
+            sharedPref?.edit()?.remove(doc)?.apply()
+        }
         fun aesEncrypt(data: ByteArray, doc : String): String {
             val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
             val ivParameterSpec = IvParameterSpec(ByteArray(16)) // Use a secure IV in production
@@ -35,46 +42,5 @@ class CryptoManager {
             return cipher.doFinal(encryptedData)
         }
         var sharedSecret : SnapshotStateMap<String, SecretKey> = SnapshotStateMap()
-    }
-}
-
-@Entity(tableName = "key_store")
-data class KeyStore(
-    @PrimaryKey(autoGenerate = true)
-    val id : Int? = null,
-    var doc : String,
-    var ss : String
-)
-
-@Dao
-interface KeysDao {
-    @Query("SELECT ss FROM key_store WHERE doc = :givenDoc")
-    suspend fun getUserWithName(givenDoc: String) : String
-
-    @Query("SELECT * FROM key_store WHERE doc = :givenDoc")
-    suspend fun getWithName(givenDoc: String) : KeyStore
-    @Insert
-    suspend fun insertItem(ks: KeyStore)
-
-    @Delete
-    suspend fun deleteItem(ks: KeyStore)
-}
-
-@Database(
-    entities = [
-        KeyStore::class
-    ],
-    version = 1
-)
-abstract class MainDB : RoomDatabase() {
-    abstract val dao: KeysDao
-    companion object {
-        fun createDataBase(context: Context): MainDB {
-            return Room.databaseBuilder(
-                context,
-                MainDB::class.java,
-                "key_store.db"
-            ).build()
-        }
     }
 }

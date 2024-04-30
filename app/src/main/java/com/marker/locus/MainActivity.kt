@@ -58,7 +58,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.marker.locus.location.LocationApp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -80,16 +79,11 @@ import com.marker.locus.signin.SignInViewModel
 import com.marker.locus.ui.theme.LocusTheme
 import kotlinx.coroutines.launch
 import java.security.Security
-import javax.crypto.SecretKey
-import javax.crypto.spec.SecretKeySpec
-import kotlin.io.encoding.Base64
-import kotlin.io.encoding.ExperimentalEncodingApi
 
 class MainActivity : ComponentActivity() {
 
     private var contacts : SnapshotStateList<ContactLocusInfo> = SnapshotStateList()
     private var activeContacts : SnapshotStateMap<String, ActiveContact> = SnapshotStateMap()
-    private val database by lazy { MainDB.createDataBase(this) }
     private val googleAuthUiClient by lazy {
         GoogleAuthUiClient(
             context = applicationContext,
@@ -100,6 +94,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         Security.insertProviderAt(org.spongycastle.jce.provider.BouncyCastleProvider(), 1)
         FirebaseService.sharedPref = getSharedPreferences("sharedPref", Context.MODE_PRIVATE)
+        CryptoManager.sharedPref = getSharedPreferences("keyStore", Context.MODE_PRIVATE)
         enableEdgeToEdge(
             SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT)
         )
@@ -110,7 +105,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    PermissionLauncher(database)
+                    PermissionLauncher()
                 }
             }
         }
@@ -135,9 +130,8 @@ class MainActivity : ComponentActivity() {
         else "Denied"
     }
 
-    @OptIn(ExperimentalEncodingApi::class)
     @Composable
-    private fun SignInController(database: MainDB) {
+    private fun SignInController() {
         val navController = rememberNavController()
         NavHost(navController = navController, startDestination = "sign_in") {
             lateinit var data: MutableState<AllUserData>
@@ -149,14 +143,12 @@ class MainActivity : ComponentActivity() {
                     if (siu != null) {
                         data = mutableStateOf(AllUserData(siu))
                         data.value.loadData()
-                        contacts = data.value.getContacts()
-                        activeContacts = data.value.getActiveContacts()
-                        for (i in activeContacts.values) {
-                            val ss = Base64.decode(database.dao.getUserWithName(i.doc))
-                            CryptoManager.sharedSecret[i.doc] = SecretKeySpec(ss, 0, ss.size, "AES")
-                            Log.d("LOADEDAAAAAAAAA", database.dao.getUserWithName(i.doc))
-                        }
+
                         if (data.value.privateData.userName != "") {
+                            contacts = data.value.getContacts()
+                            activeContacts = data.value.getActiveContacts()
+                            data.value.postKeys()
+                            Log.d("ACTIVE", "${CryptoManager.sharedSecret.size}")
                             navController.navigate("profile")
                         } else {
                             navController.navigate("nickname")
@@ -232,8 +224,7 @@ class MainActivity : ComponentActivity() {
                             navController.navigate("sign_in")
                         }
                     },
-                    applicationContext,
-                    database
+                    applicationContext
                 )
             }
         }
@@ -377,7 +368,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun PermissionLauncher(database: MainDB) {
+    fun PermissionLauncher() {
         var locationPermissionsGranted by remember { mutableStateOf(areLocationPermissionsAlreadyGranted()) }
         var shouldShowPermissionRationale by remember {
             mutableStateOf(
@@ -432,7 +423,7 @@ class MainActivity : ComponentActivity() {
         )
 
         if (areLocationPermissionsAlreadyGranted())
-            SignInController(database)
+            SignInController()
 
         if (shouldShowPermissionRationale) {
             AlertDialog(

@@ -1,8 +1,6 @@
 package com.marker.locus
 
 import android.util.Log
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import com.google.android.gms.maps.model.LatLng
@@ -14,20 +12,17 @@ import com.google.firebase.messaging.FirebaseMessaging
 import com.marker.locus.composables.md5
 import com.marker.locus.signin.UserData
 import kotlinx.coroutines.tasks.await
-import okio.ByteString.Companion.toByteString
-import org.spongycastle.crypto.tls.HashAlgorithm.md5
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.spec.ECGenParameterSpec
-import javax.crypto.SecretKey
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 class AllUserData(
-    locusUser : UserData
+    locusUser : UserData,
 ) {
-    val keyGen = KeyPairGenerator.getInstance("ECDH", "SC")
-    val ecsp = ECGenParameterSpec("secp256r1")
+    val keyGen: KeyPairGenerator = KeyPairGenerator.getInstance("ECDH", "SC")
+    private val ecsp = ECGenParameterSpec("secp256r1")
     lateinit var myKeyPair : KeyPair
     private val googleData = locusUser
     var publicData : PublicLocusInfo = PublicLocusInfo()
@@ -61,9 +56,6 @@ class AllUserData(
                 createPrivateData()
             }
             .await()
-    }
-    fun getUUID(): String {
-        return googleData.userId
     }
 
     @OptIn(ExperimentalEncodingApi::class)
@@ -124,6 +116,8 @@ class AllUserData(
     fun getActiveContacts() : SnapshotStateMap<String, ActiveContact> {
         val resultList = SnapshotStateMap<String, ActiveContact>()
         for (i in privateData.activeContacts) {
+            val docName = md5(i + privateData.userName)
+            CryptoManager.loadKey(docName)
             Firebase.firestore
                 .collection("Public Locus")
                 .document(i)
@@ -132,29 +126,29 @@ class AllUserData(
                     if (it.exists()) {
                         val resLocus = it.toObject(PublicLocusInfo::class.java)
                         if (resLocus != null) {
-                            val docName = md5(i + privateData.userName)
                             val listener = Firebase.firestore.collection("locator")
                                 .document(docName)
                                 .addSnapshotListener { snapshot, _ ->
                                     if (snapshot != null) {
                                         val res = snapshot.toObject(LatLngConvertor::class.java)
                                         if (res != null) {
-                                            if (res.latitude != "" && res.longitude != "") {// &&
-//                                                CryptoManager.sharedSecret[docName] != null) {
-//                                                val lat = CryptoManager.aesDecrypt(
-//                                                    Base64.decode(res.latitude),
-//                                                    docName
-//                                                ).toString(Charsets.UTF_8)
-//
-//                                                val long = CryptoManager.aesDecrypt(
-//                                                    Base64.decode(res.longitude),
-//                                                    docName
-//                                                ).toString(Charsets.UTF_8)
+                                            if ((res.latitude != "" && res.longitude != "") &&
+                                                CryptoManager.sharedSecret[docName] != null) {
+
+                                                val lat = CryptoManager.aesDecrypt(
+                                                    Base64.decode(res.latitude),
+                                                    docName
+                                                ).toString(Charsets.UTF_8)
+
+                                                val long = CryptoManager.aesDecrypt(
+                                                    Base64.decode(res.longitude),
+                                                    docName
+                                                ).toString(Charsets.UTF_8)
                                                 resultList[docName] =
                                                     ActiveContact(
                                                         doc = docName,
                                                         picture = resLocus.profilePicture,
-                                                        location = LatLng(res.latitude.toDouble(), res.longitude.toDouble())
+                                                        location = LatLng(lat.toDouble(), long.toDouble())
                                                     )
                                             }
                                         } else {

@@ -51,8 +51,6 @@ import com.marker.locus.AllUserData
 import com.marker.locus.ContactLocusInfo
 import com.marker.locus.CryptoManager
 import com.marker.locus.KeyExtractor
-import com.marker.locus.MainActivity
-import com.marker.locus.MainDB
 import com.marker.locus.PublicLocusInfo
 import com.marker.locus.location.LocationService
 import com.marker.locus.request.FirebaseService
@@ -71,8 +69,7 @@ fun Footer(
     contacts: SnapshotStateList<ContactLocusInfo>,
     activeContacts: SnapshotStateMap<String, ActiveContact>,
     userData: MutableState<AllUserData>,
-    context: Context,
-    database: MainDB
+    context: Context
 ) {
     val show = remember {
         mutableStateOf(false)
@@ -116,7 +113,7 @@ fun Footer(
                                     ka.doPhase(key, true)
                                     val ss = ka.generateSecret()
                                     CryptoManager.sharedSecret[md5(userData.value.privateData.userName + FirebaseService.sender)] = SecretKeySpec(ss, 0, ss.size, "AES")
-                                    Log.d("KEYS", Base64.encode(ka.generateSecret()))
+                                    Log.d("KEYS", Base64.encode(ss))
                                     userData.value.myKeyPair = userData.value.keyGen.genKeyPair()
                                     userData.value.postKeys()
                                 }
@@ -155,7 +152,7 @@ fun Footer(
         DeleteUserLauncher(showDelete, contacts, userData)
         LazyColumn {
             items(contacts.size) {
-                ContactCard(contacts[it], showDelete, userData, activeContacts, database)
+                ContactCard(contacts[it], showDelete, userData, activeContacts)
             }
         }
     }

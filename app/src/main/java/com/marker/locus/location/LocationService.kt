@@ -79,16 +79,14 @@ class LocationService: Service() {
                             .document(i)
                             .update(
                                 mapOf(
-                                    "latitude" to lat,
-//                                            CryptoManager.aesEncrypt(
-//                                        lat.encodeToByteArray(),
-//                                        i
-//                                  ),
-                                    "longitude" to long
-//                                            CryptoManager.aesEncrypt(
-//                                        long.encodeToByteArray(),
-//                                        i
-//                                  )
+                                    "latitude" to CryptoManager.aesEncrypt(
+                                        lat.encodeToByteArray(),
+                                        i
+                                  ),
+                                    "longitude" to CryptoManager.aesEncrypt(
+                                        long.encodeToByteArray(),
+                                        i
+                                  )
                                 )
                             ).addOnFailureListener {
                                 doc.remove(i)

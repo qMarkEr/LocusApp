@@ -1,8 +1,6 @@
 package com.marker.locus.composables
 
 import android.annotation.SuppressLint
-import android.app.Activity
-import com.marker.locus.location.LocationApp
 import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -22,7 +20,6 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
@@ -35,7 +32,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.room.Database
 import coil.compose.AsyncImage
 import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.firestore.ktx.firestore
@@ -46,9 +42,7 @@ import com.marker.locus.AllUserData
 import com.marker.locus.ContactLocusInfo
 import com.marker.locus.CryptoManager
 import com.marker.locus.KeyExtractor
-import com.marker.locus.KeyStore
 import com.marker.locus.LatLngConvertor
-import com.marker.locus.MainDB
 import com.marker.locus.R
 import com.marker.locus.request.NotificationData
 import com.marker.locus.request.PushNotification
@@ -65,7 +59,6 @@ import javax.crypto.KeyAgreement
 import javax.crypto.spec.SecretKeySpec
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
-import kotlin.random.Random
 
 @SuppressLint("CommitPrefEdits")
 @OptIn(ExperimentalEncodingApi::class)
@@ -73,8 +66,7 @@ import kotlin.random.Random
 fun ContactCard(locus : ContactLocusInfo,
                 delete : MutableState<ContactLocusInfo?>,
                 myData : MutableState<AllUserData>,
-                activeContacts : SnapshotStateMap<String, ActiveContact>,
-                database: MainDB
+                activeContacts : SnapshotStateMap<String, ActiveContact>
 ) {
     var mode by remember {
         mutableStateOf(myData.value.privateData.activeContacts.contains(locus.publicName))
@@ -82,7 +74,6 @@ fun ContactCard(locus : ContactLocusInfo,
     var share by remember {
         mutableStateOf(myData.value.privateData.activeContacts.contains(locus.publicName))
     }
-    var scope = rememberCoroutineScope()
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -135,6 +126,7 @@ fun ContactCard(locus : ContactLocusInfo,
                 .padding(15.dp),
             onClick = {
                 mode = !mode
+                val docName = md5(locus.publicName + myData.value.privateData.userName)
                 if (mode) {
                     PushNotification(
                         NotificationData(
@@ -145,54 +137,48 @@ fun ContactCard(locus : ContactLocusInfo,
                     ).also { noti ->
                         sendNotification(noti)
                     }
+
                     Firebase.firestore.collection("keyStore")
                         .document(locus.publicName)
                         .get()
                         .addOnSuccessListener {
                             val res = it.toObject(KeyExtractor::class.java)
-                            Log.d("AAAAA", "AAAAAAAAAAAAAAAAAAAA")
                             if (res != null) {
                                 val key = KeyFactory.getInstance("ECDH")
                                     .generatePublic(X509EncodedKeySpec(Base64.decode(res.key)))
                                 val ka = KeyAgreement.getInstance("ECDH", "SC")
                                 ka.init(myData.value.myKeyPair.private)
                                 ka.doPhase(key, true)
-                                Log.d("KEYS", Base64.encode(ka.generateSecret()))
                                 val ss = ka.generateSecret()
-                                CryptoManager.sharedSecret[md5(locus.publicName + myData.value.privateData.userName)] = SecretKeySpec(ss, 0, ss.size, "AES")
-                                scope.launch {
-                                    database.dao.insertItem(
-                                        KeyStore(
-                                            doc = md5(locus.publicName + myData.value.privateData.userName),
-                                            ss = Base64.encode(ss)
-                                        )
-                                    )
-                                }
+                                Log.d("KEYS", Base64.encode(ss))
+                                CryptoManager.sharedSecret[docName] = SecretKeySpec(ss, 0, ss.size, "AES")
+                                CryptoManager.addKey(docName, Base64.encode(ss))
                             }
                         }
+
                     val listener = Firebase.firestore.collection("locator")
                         .document(md5(locus.publicName + myData.value.privateData.userName))
                         .addSnapshotListener { snapshot, _ ->
                             if (snapshot != null) {
                                 val res = snapshot.toObject(LatLngConvertor::class.java)
                                 if (res != null) {
-                                    if (res.latitude != "" && res.longitude != "") {//&&
-//                                        CryptoManager.sharedSecret[md5(locus.publicName + myData.value.privateData.userName)] != null) {
-//                                        val lat = CryptoManager.aesDecrypt(
-//                                            Base64.decode(res.latitude),
-//                                            md5(locus.publicName + myData.value.privateData.userName)
-//                                        ).toString(Charsets.UTF_8)
-//
-//                                        val long = CryptoManager.aesDecrypt(
-//                                            Base64.decode(res.longitude),
-//                                            md5(locus.publicName + myData.value.privateData.userName)
-//                                        ).toString(Charsets.UTF_8)
-                                        activeContacts[md5(locus.publicName + myData.value.privateData.userName)] =
+                                    if ((res.latitude != "" && res.longitude != "") &&
+                                        CryptoManager.sharedSecret[docName] != null) {
+                                        val lat = CryptoManager.aesDecrypt(
+                                            Base64.decode(res.latitude),
+                                            docName
+                                        ).toString(Charsets.UTF_8)
+
+                                        val long = CryptoManager.aesDecrypt(
+                                            Base64.decode(res.longitude),
+                                            docName
+                                        ).toString(Charsets.UTF_8)
+                                        activeContacts[docName] =
                                             ActiveContact(
-                                                doc = md5(locus.publicName + myData.value.privateData.userName),
+                                                doc = docName,
                                                 picture = locus.profilePicture,
-//                                                location = LatLng(lat.toDouble(), long.toDouble())
-                                                location = LatLng(res.latitude.toDouble(), res.longitude.toDouble())
+                                                location = LatLng(lat.toDouble(), long.toDouble())
+//                                                location = LatLng(res.latitude.toDouble(), res.longitude.toDouble())
                                             )
 
                                         mode = true
@@ -205,7 +191,7 @@ fun ContactCard(locus : ContactLocusInfo,
                                 } else {
                                     share = false
                                     mode = false
-                                    activeContacts.remove(md5(locus.publicName + myData.value.privateData.userName))
+                                    activeContacts.remove(docName)
                                     myData.value.privateData.activeContacts.remove(locus.publicName)
                                     myData.value.updatePrivateData()
                                 }
@@ -216,23 +202,15 @@ fun ContactCard(locus : ContactLocusInfo,
 
                 }
                 else {
-                    activeContacts[md5(locus.publicName + myData.value.privateData.userName)]?.listener?.remove()
-                    activeContacts.remove(md5(locus.publicName + myData.value.privateData.userName))
+                    activeContacts[docName]?.listener?.remove()
+                    activeContacts.remove(docName)
                     Firebase.firestore.collection("locator")
                         .document(md5(locus.publicName + myData.value.privateData.userName))
                         .delete()
                     share = false
                     myData.value.privateData.activeContacts.remove(locus.publicName)
                     myData.value.updatePrivateData()
-                    scope.launch {
-                        CryptoManager.sharedSecret[md5(locus.publicName + myData.value.privateData.userName)]?.let {
-                            database.dao.getWithName(md5(locus.publicName + myData.value.privateData.userName))
-                        }?.let {
-                            database.dao.deleteItem(
-                                it
-                            )
-                        }
-                    }
+                    CryptoManager.deleteKey(docName)
                 }
             }
         ) {
