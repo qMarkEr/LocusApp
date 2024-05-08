@@ -11,9 +11,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
+//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.TabRowDefaults.Divider
+import androidx.compose.material3.Button
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
@@ -23,6 +24,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -65,7 +67,7 @@ fun SignInUI(state: SignInState,
                     .width(150.dp)
             )
         }
-        TextButton(
+        Button(
             onClick = { onSignInClick() },
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -76,5 +78,14 @@ fun SignInUI(state: SignInState,
             Spacer(modifier = Modifier.width(8.dp))
             Text(text = "Become Locus", fontSize = 20.sp)
         }
+    }
+}
+
+@Preview
+@Composable
+private fun SignInPreview() {
+    val state = SignInState()
+    SignInUI(state = state) {
+
     }
 }

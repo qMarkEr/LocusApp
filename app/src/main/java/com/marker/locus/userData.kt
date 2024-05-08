@@ -117,7 +117,13 @@ class AllUserData(
         val resultList = SnapshotStateMap<String, ActiveContact>()
         for (i in privateData.activeContacts) {
             val docName = md5(i + privateData.userName)
-            CryptoManager.loadKey(docName)
+            if (CryptoManager.sharedPref?.contains(docName) == true) {
+                CryptoManager.loadKey(docName)
+            } else {
+                privateData.activeContacts.remove(i)
+                updatePrivateData()
+                continue
+            }
             Firebase.firestore
                 .collection("Public Locus")
                 .document(i)

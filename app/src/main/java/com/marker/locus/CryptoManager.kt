@@ -17,7 +17,7 @@ class CryptoManager {
         var sharedPref: SharedPreferences? = null
         fun loadKey(doc : String) {
             val str = sharedPref?.getString(doc, "")?.let { Base64.decode(it) }
-            if (str != null) {
+            if (str != null && str.isNotEmpty()) {
                 sharedSecret[doc] = SecretKeySpec(str, 0, str.size, "AES")
             }
         }
